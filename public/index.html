@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 웰페이퍼 공모전</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* ── 테마 변수 ── */
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --card: #16213e;
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --gold: #f59e0b;
+      --silver: #94a3b8;
+      --bronze: #cd7c3f;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: rgba(124,58,237,0.25);
+      --header-bg: linear-gradient(135deg,#0f0f1a 0%,#1a0a2e 50%,#0a1628 100%);
+      --shadow: rgba(0,0,0,0.4);
+    }
+
+    [data-theme="white"] {
+      --bg: #f0f4ff;
+      --surface: #ffffff;
+      --card: #f8f7ff;
+      --accent: #7c3aed;
+      --accent2: #9333ea;
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: rgba(124,58,237,0.18);
+      --header-bg: linear-gradient(135deg,#f0f4ff 0%,#ede9fe 50%,#e0e7ff 100%);
+      --shadow: rgba(0,0,0,0.1);
+    }
+
+    /* 벚꽃 봄 테마 */
+    [data-theme="spring1"] {
+      --bg: #fff3f7;
+      --surface: #ffffff;
+      --card: #fff8fb;
+      --accent: #db2777;
+      --accent2: #ec4899;
+      --accent-end: #f9a8d4;
+      --text: #2d0f1c;
+      --muted: #9d6b7a;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: rgba(219,39,119,0.18);
+      --header-bg: linear-gradient(135deg,#fff0f5 0%,#fce7f3 50%,#fdf2f8 100%);
+      --shadow: rgba(219,39,119,0.08);
+    }
+
+    /* 민트봄 테마 */
+    [data-theme="spring2"] {
+      --bg: #f0faf7;
+      --surface: #ffffff;
+      --card: #f5fffc;
+      --accent: #059669;
+      --accent2: #10b981;
+      --accent-end: #6ee7b7;
+      --text: #052e16;
+      --muted: #6b8f7d;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: rgba(5,150,105,0.18);
+      --header-bg: linear-gradient(135deg,#ecfdf5 0%,#d1fae5 50%,#f0fdf4 100%);
+      --shadow: rgba(5,150,105,0.08);
+    }
+
+    /* ── 기본 리셋 ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* 봄 테마 버튼 그라디언트 오버라이드 */
+    [data-theme="spring1"] .btn-primary,
+    [data-theme="spring1"] .btn-verify,
+    [data-theme="spring1"] .vote-badge {
+      background: linear-gradient(135deg, #db2777, #f472b6);
+    }
+    [data-theme="spring2"] .btn-primary,
+    [data-theme="spring2"] .btn-verify,
+    [data-theme="spring2"] .vote-badge {
+      background: linear-gradient(135deg, #059669, #34d399);
+    }
+    [data-theme="spring1"] .nav-btn.active,
+    [data-theme="spring1"] .theme-btn.active { background: #db2777 !important; }
+    [data-theme="spring2"] .nav-btn.active,
+    [data-theme="spring2"] .theme-btn.active { background: #059669 !important; }
+
+    /* ── 헤더 ── */
+    header {
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      transition: background 0.3s;
+    }
+
+    /* 상단 바: 로고 + 테마 + 이름 */
+    .header-top {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 56px;
+    }
+
+    .logo {
+      font-size: 1.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a855f7, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logo svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .header-spacer { flex: 1; }
+
+    /* 테마 스위처 */
+    .theme-switcher {
+      display: flex;
+      gap: 4px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .theme-btn {
+      background: none;
+      border: none;
+      padding: 5px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 0.75rem;
+      gap: 3px;
+    }
+    .theme-btn svg { width: 14px; height: 14px; }
+    .theme-btn:hover { background: var(--border); color: var(--text); }
+    .theme-btn.active { background: var(--accent); color: white; }
+
+    /* 투표자 영역 */
+    .voter-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .voter-area label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .voter-area label svg { width: 13px; height: 13px; }
+
+    .voter-input {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      width: 130px;
+      transition: border-color 0.2s;
+    }
+    .voter-input:focus { outline: none; border-color: var(--accent2); }
+
+    .vote-badge {
+      background: var(--accent);
+      color: white;
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .vote-badge svg { width: 12px; height: 12px; }
+    .vote-badge.full { background: var(--success); }
+
+    /* ── 하단 네비 바 ── */
+    .header-nav {
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.08);
+    }
+
+    nav {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--muted);
+      padding: 12px 8px 10px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+    .nav-btn svg { width: 18px; height: 18px; }
+    .nav-btn .nav-label { font-size: 0.78rem; }
+    .nav-btn:hover { color: var(--accent2); background: var(--border); }
+    .nav-btn.active {
+      color: var(--accent2);
+      border-bottom-color: var(--accent2);
+      background: rgba(124,58,237,0.07);
+    }
+    [data-theme="spring1"] .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(219,39,119,0.07); }
+    [data-theme="spring2"] .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(5,150,105,0.07); }
+
+    /* ── 메인 ── */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── 업로드 ── */
+    .upload-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 560px;
+      margin: 0 auto;
+      backdrop-filter: blur(8px);
+    }
+
+    .upload-card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #a855f7, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .upload-card h2 svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+    .upload-card > p { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-group label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.83rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .form-group label svg { width: 13px; height: 13px; }
+
+    .form-group input[type="text"] {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.93rem;
+      transition: border-color 0.2s;
+    }
+    .form-group input[type="text"]:focus { outline: none; border-color: var(--accent2); }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent2); background: rgba(124,58,237,0.06); }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .drop-zone p { color: var(--muted); font-size: 0.88rem; margin-bottom: 4px; }
+    .drop-zone small { color: var(--muted); font-size: 0.76rem; opacity: 0.7; }
+
+    .preview-wrap { margin-top: 12px; display: none; }
+    .preview-wrap img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: white;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .btn-primary svg { width: 17px; height: 17px; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── 갤러리 ── */
+    .gallery-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .gallery-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .gallery-header h2 svg { width: 20px; height: 20px; color: var(--accent2); }
+
+    .work-count {
+      background: var(--border);
+      color: var(--muted);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+    }
+
+    .refresh-btn {
+      margin-left: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.83rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .refresh-btn svg { width: 13px; height: 13px; }
+    .refresh-btn:hover { color: var(--text); border-color: var(--accent2); }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .work-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      backdrop-filter: blur(4px);
+    }
+    .work-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(124,58,237,0.18); }
+    .work-card.rank-1 { border-color: var(--gold); box-shadow: 0 0 20px rgba(245,158,11,0.15); }
+    .work-card.rank-2 { border-color: var(--silver); box-shadow: 0 0 20px rgba(148,163,184,0.12); }
+    .work-card.rank-3 { border-color: var(--bronze); box-shadow: 0 0 20px rgba(205,124,63,0.12); }
+
+    .rank-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 800;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+    }
+    .rank-1 .rank-badge { background: rgba(245,158,11,0.9); color: #fff; }
+    .rank-2 .rank-badge { background: rgba(148,163,184,0.9); color: #fff; }
+    .rank-3 .rank-badge { background: rgba(205,124,63,0.9); color: #fff; }
+
+    .admin-delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(239,68,68,0.85);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .admin-delete-btn svg { width: 13px; height: 13px; }
+    .work-card:hover .admin-delete-btn { opacity: 1; }
+
+    .work-img-wrap { aspect-ratio: 16/9; overflow: hidden; background: #0a0a15; cursor: pointer; }
+    .work-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .work-img-wrap:hover img { transform: scale(1.05); }
+
+    .work-info { padding: 14px 16px; }
+
+    .work-title {
+      font-size: 0.93rem;
+      font-weight: 600;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .work-author { font-size: 0.8rem; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 4px; }
+    .work-author svg { width: 11px; height: 11px; }
+
+    .work-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+
+    .vote-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .vote-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--muted);
+      fill: none;
+      transition: all 0.2s;
+    }
+    .vote-btn:hover svg { stroke: #ef4444; transform: scale(1.15); }
+    .vote-btn.voted { border-color: #ef4444; background: rgba(239,68,68,0.08); }
+    .vote-btn.voted svg { fill: #ef4444; stroke: #ef4444; }
+
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .empty-state .icon { font-size: 3.5rem; margin-bottom: 16px; }
+    .empty-state p { font-size: 0.98rem; }
+
+    /* ── 결과 ── */
+    .results-header { text-align: center; margin-bottom: 40px; }
+
+    .results-header h2 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f59e0b, #ef4444, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .results-header h2 svg { width: 32px; height: 32px; flex-shrink: 0; }
+
+    .results-header p { color: var(--muted); font-size: 0.9rem; }
+
+    /* 투표 진행 중 안내 */
+    .voting-in-progress {
+      text-align: center;
+      padding: 80px 20px;
+    }
+    .vip-icon { font-size: 5rem; margin-bottom: 20px; }
+    .vip-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .vip-desc { color: var(--muted); font-size: 0.95rem; }
+
+    .podium {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto 48px;
+      align-items: end;
+    }
+
+    .podium-item { text-align: center; }
+    .podium-item.p1 { order: 2; }
+    .podium-item.p2 { order: 1; }
+    .podium-item.p3 { order: 3; }
+
+    .podium-img-wrap {
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      border: 3px solid transparent;
+      aspect-ratio: 16/9;
+    }
+    .p1 .podium-img-wrap { border-color: var(--gold); box-shadow: 0 0 30px rgba(245,158,11,0.3); }
+    .p2 .podium-img-wrap { border-color: var(--silver); }
+    .p3 .podium-img-wrap { border-color: var(--bronze); }
+    .podium-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+    .podium-rank { font-size: 2rem; margin-bottom: 4px; }
+    .p1 .podium-rank { font-size: 2.8rem; }
+    .podium-name { font-weight: 700; font-size: 0.93rem; }
+    .podium-votes { color: var(--muted); font-size: 0.8rem; margin-top: 2px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+    .podium-votes svg { width: 11px; height: 11px; color: #ef4444; }
+
+    .results-list { max-width: 700px; margin: 0 auto; }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 10px;
+      backdrop-filter: blur(4px);
+    }
+
+    .result-rank { font-size: 1.15rem; font-weight: 800; width: 36px; text-align: center; }
+    .result-thumb { width: 64px; height: 36px; border-radius: 6px; object-fit: cover; }
+    .result-info { flex: 1; }
+    .result-title { font-weight: 600; font-size: 0.88rem; }
+    .result-author { color: var(--muted); font-size: 0.78rem; display: flex; align-items: center; gap: 3px; }
+    .result-author svg { width: 10px; height: 10px; }
+    .result-votes { font-size: 0.88rem; font-weight: 700; color: var(--accent2); display: flex; align-items: center; gap: 4px; }
+    .result-votes svg { width: 13px; height: 13px; color: #ef4444; }
+
+    /* ── 관리자 ── */
+    .admin-card {
+      background: var(--surface);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 500px;
+      margin: 0 auto;
+      backdrop-filter: blur(8px);
+    }
+
+    .admin-card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--danger);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .admin-card h2 svg { width: 18px; height: 18px; }
+
+    .admin-verified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(16,185,129,0.15);
+      color: var(--success);
+      border: 1px solid rgba(16,185,129,0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .admin-verified-badge svg { width: 13px; height: 13px; }
+
+    .voting-status-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .voting-status-info { display: flex; flex-direction: column; gap: 3px; }
+    .voting-status-label { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .voting-status-label svg { width: 12px; height: 12px; }
+    .voting-status-val { font-size: 0.95rem; font-weight: 700; }
+    .status-open { color: var(--success); }
+    .status-closed { color: var(--danger); }
+
+    .btn-end-voting {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .btn-end-voting svg { width: 14px; height: 14px; }
+    .btn-end-voting:hover { opacity: 0.88; }
+    .btn-end-voting.reopen { background: linear-gradient(135deg, #10b981, #3b82f6); }
+
+    .admin-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-top: 10px;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-danger svg { width: 14px; height: 14px; }
+    .btn-danger:hover { opacity: 0.85; }
+
+    .btn-verify {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 11px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 0.93rem;
+      font-weight: 600;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .btn-verify svg { width: 15px; height: 15px; }
+    .btn-verify:hover { opacity: 0.88; }
+
+    /* ── 토스트 ── */
+    .toast-wrap {
+      position: fixed;
+      bottom: 26px;
+      right: 26px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      box-shadow: 0 8px 30px var(--shadow);
+      animation: slideIn 0.3s ease;
+      pointer-events: auto;
+      max-width: 320px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--danger); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── 라이트박스 ── */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 0 60px rgba(124,58,237,0.3); }
+
+    .lightbox-close {
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .lightbox-close svg { width: 16px; height: 16px; }
+    .lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── 로딩 ── */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 자료 다운로드 ── */
+    .docs-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .docs-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .docs-header h2 svg { width: 20px; height: 20px; color: var(--accent2); }
+
+    .doc-list { display: flex; flex-direction: column; gap: 10px; max-width: 720px; }
+
+    .doc-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      backdrop-filter: blur(4px);
+      transition: box-shadow 0.2s;
+    }
+    .doc-row:hover { box-shadow: 0 4px 20px var(--shadow); }
+
+    .doc-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .doc-icon svg { width: 18px; height: 18px; color: white; }
+
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name {
+      font-weight: 600;
+      font-size: 0.93rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .doc-meta { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .btn-download {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+    }
+    .btn-download svg { width: 14px; height: 14px; }
+    .btn-download:hover { opacity: 0.85; }
+
+    .btn-doc-delete {
+      background: none;
+      border: 1px solid rgba(239,68,68,0.3);
+      color: var(--danger);
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .btn-doc-delete svg { width: 13px; height: 13px; }
+    .btn-doc-delete:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+    /* 어드민 자료 업로드 영역 */
+    .doc-upload-box {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      max-width: 720px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .doc-upload-box.visible { display: block; }
+    .doc-upload-box h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent2);
+    }
+    .doc-upload-box h3 svg { width: 15px; height: 15px; }
+
+    .doc-upload-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .doc-file-input-label {
+      flex: 1;
+      min-width: 200px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: border-color 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .doc-file-input-label svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .doc-file-input-label input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .doc-file-input-label:hover { border-color: var(--accent2); }
+    #docFileName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .btn-doc-upload {
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-doc-upload svg { width: 14px; height: 14px; }
+    .btn-doc-upload:hover { opacity: 0.88; }
+    .btn-doc-upload:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .docs-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .docs-empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+    .docs-empty p { font-size: 0.95rem; }
+
+    /* ── 이펙트 캔버스 ── */
+    #effectCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      display: none;
+    }
+    [data-theme="spring1"] #effectCanvas,
+    [data-theme="spring2"] #effectCanvas { display: block; }
+
+    main { position: relative; z-index: 1; }
+
+    /* ── 반응형 ── */
+
+    /* 태블릿 */
+    @media (max-width: 900px) {
+      .header-top { gap: 8px; }
+      .voter-input { width: 110px; }
+      .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    }
+
+    /* 모바일 */
+    @media (max-width: 600px) {
+      /* 상단 바 */
+      .header-top {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px 14px;
+        gap: 8px;
+      }
+      .logo { font-size: 1rem; }
+      .theme-btn span { display: none; }
+      .theme-switcher { padding: 3px; }
+      .theme-btn { padding: 5px 6px; }
+
+      /* 투표자 영역 */
+      .voter-area { width: 100%; justify-content: space-between; }
+      .voter-area label { display: none; }
+      .voter-input { flex: 1; min-width: 0; }
+
+      /* 네비 */
+      .nav-btn { padding: 10px 4px 8px; gap: 3px; }
+      .nav-btn svg { width: 16px; height: 16px; }
+      .nav-btn .nav-label { font-size: 0.68rem; }
+
+      /* 메인 패딩 */
+      main { padding: 20px 14px; }
+
+      /* 업로드 카드 */
+      .upload-card { padding: 24px 18px; }
+
+      /* 갤러리 */
+      .gallery-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .work-info { padding: 10px 12px; }
+      .work-title { font-size: 0.82rem; }
+
+      /* 결과 시상대 */
+      .podium { grid-template-columns: 1fr; gap: 14px; }
+      .podium-item { order: unset !important; }
+
+      /* 어드민 */
+      .admin-card { padding: 20px 16px; }
+      .voting-status-box { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .btn-end-voting { width: 100%; justify-content: center; }
+
+      /* 자료 다운로드 */
+      .doc-row { flex-wrap: wrap; gap: 10px; }
+      .doc-info { width: calc(100% - 54px); }
+      .btn-download { width: 100%; justify-content: center; }
+      .doc-upload-row { flex-direction: column; }
+      .btn-doc-upload { width: 100%; justify-content: center; }
+    }
+
+    /* 아주 작은 화면 */
+    @media (max-width: 380px) {
+      .gallery-grid { grid-template-columns: 1fr; }
+      .nav-btn .nav-label { display: none; }
+      .nav-btn { padding: 12px 6px; }
+    }
+
+    /* ── form password input ── */
+    .pw-input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.93rem;
+      transition: border-color 0.2s;
+    }
+    .pw-input:focus { outline: none; border-color: var(--accent2); }
+  </style>
+</head>
+<body>
+
+<canvas id="effectCanvas"></canvas>
+
+<header>
+  <!-- 상단: 로고 + 테마 + 이름/투표수 -->
+  <div class="header-top">
+    <div class="logo">
+      <i data-lucide="sparkles"></i>
+      AI 웰페이퍼 공모전
+    </div>
+    <div class="header-spacer"></div>
+
+    <!-- 테마 스위처 -->
+    <div class="theme-switcher">
+      <button class="theme-btn active" data-t="dark" title="다크" onclick="applyTheme('dark')">
+        <i data-lucide="moon"></i><span>다크</span>
+      </button>
+      <button class="theme-btn" data-t="white" title="화이트" onclick="applyTheme('white')">
+        <i data-lucide="sun"></i><span>화이트</span>
+      </button>
+      <button class="theme-btn" data-t="spring1" title="벚꽃" onclick="applyTheme('spring1')">
+        <i data-lucide="flower-2"></i><span>벚꽃</span>
+      </button>
+      <button class="theme-btn" data-t="spring2" title="민트봄" onclick="applyTheme('spring2')">
+        <i data-lucide="sprout"></i><span>민트봄</span>
+      </button>
+    </div>
+
+    <!-- 투표자 이름 -->
+    <div class="voter-area">
+      <label><i data-lucide="user"></i>내 이름</label>
+      <input type="text" class="voter-input" id="voterName" placeholder="이름 입력" maxlength="20" />
+      <span class="vote-badge" id="voteBadge"><i data-lucide="heart"></i> 0 / 2</span>
+    </div>
+  </div>
+
+  <!-- 하단: 메뉴 네비 -->
+  <div class="header-nav">
+    <nav>
+      <button class="nav-btn active" onclick="showSection('gallery')">
+        <i data-lucide="layout-grid"></i>
+        <span class="nav-label">갤러리</span>
+      </button>
+      <button class="nav-btn" onclick="showSection('upload')">
+        <i data-lucide="upload-cloud"></i>
+        <span class="nav-label">업로드</span>
+      </button>
+      <button class="nav-btn" onclick="showSection('results')">
+        <i data-lucide="trophy"></i>
+        <span class="nav-label">결과</span>
+      </button>
+      <button class="nav-btn" onclick="showSection('docs')">
+        <i data-lucide="download"></i>
+        <span class="nav-label">자료 다운로드</span>
+      </button>
+      <button class="nav-btn" onclick="showSection('admin')" style="max-width:56px;opacity:0.55">
+        <i data-lucide="shield"></i>
+        <span class="nav-label" style="font-size:0.7rem">관리</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- 갤러리 -->
+  <section class="section active" id="sec-gallery">
+    <div class="gallery-header">
+      <h2><i data-lucide="images"></i>작품 갤러리</h2>
+      <span class="work-count" id="workCount">0개</span>
+      <button class="refresh-btn" onclick="loadWorks()">
+        <i data-lucide="refresh-cw"></i>새로고침
+      </button>
+    </div>
+    <div class="gallery-grid" id="galleryGrid">
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="icon">🎨</div>
+        <p>아직 업로드된 작품이 없습니다</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 업로드 -->
+  <section class="section" id="sec-upload">
+    <div class="upload-card">
+      <h2><i data-lucide="upload-cloud"></i>작품 업로드</h2>
+      <p>직접 만든 AI 웰페이퍼를 올려주세요 (최대 30MB)</p>
+
+      <form id="uploadForm" onsubmit="handleUpload(event)">
+        <div class="form-group">
+          <label><i data-lucide="user"></i>이름 *</label>
+          <input type="text" id="uploadAuthor" placeholder="본인 이름" required maxlength="30" />
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="type"></i>작품 제목 (선택)</label>
+          <input type="text" id="uploadTitle" placeholder="멋진 제목을 지어보세요" maxlength="50" />
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="image"></i>이미지 파일 * (JPG, PNG, WEBP)</label>
+          <div class="drop-zone" id="dropZone">
+            <input type="file" accept="image/*" id="fileInput" onchange="previewFile(this)" required />
+            <div class="drop-icon">🖼️</div>
+            <p>클릭하거나 이미지를 드래그해서 올려주세요</p>
+            <small>JPG · PNG · WEBP · 최대 30MB</small>
+          </div>
+          <div class="preview-wrap" id="previewWrap">
+            <img id="previewImg" src="" alt="미리보기" />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="uploadBtn">
+          <i data-lucide="upload-cloud"></i>작품 업로드하기
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 결과 -->
+  <section class="section" id="sec-results">
+    <!-- 투표 진행 중 안내 (기본 표시) -->
+    <div class="voting-in-progress" id="votingInProgress">
+      <div class="vip-icon">🔒</div>
+      <div class="vip-title">투표가 진행 중입니다</div>
+      <p class="vip-desc">강사님이 투표를 종료하면 결과를 확인할 수 있어요 ✨</p>
+    </div>
+
+    <!-- 실제 결과 (투표 종료 후 공개) -->
+    <div id="resultsContent" style="display:none">
+      <div class="results-header">
+        <h2><i data-lucide="trophy"></i>최종 결과</h2>
+        <p id="resultsSubtitle">집계 중...</p>
+      </div>
+      <div id="podiumWrap" class="podium"></div>
+      <div class="results-list" id="resultsList"></div>
+    </div>
+  </section>
+
+  <!-- 자료 다운로드 -->
+  <section class="section" id="sec-docs">
+    <div class="docs-header">
+      <h2><i data-lucide="download"></i>자료 다운로드</h2>
+    </div>
+
+    <!-- 어드민 자료 업로드 (관리자 인증 후 표시) -->
+    <div class="doc-upload-box" id="docUploadBox">
+      <h3><i data-lucide="upload-cloud"></i>자료 업로드 (강사 전용)</h3>
+      <div class="doc-upload-row">
+        <label class="doc-file-input-label">
+          <i data-lucide="file-plus"></i>
+          <span id="docFileName">파일을 선택하세요 (HWP, PDF, DOCX, PPTX 등)</span>
+          <input type="file" id="docFileInput" accept=".hwp,.hwpx,.pdf,.doc,.docx,.ppt,.pptx,.txt,.zip" onchange="onDocFileChange(this)" />
+        </label>
+        <button class="btn-doc-upload" id="docUploadBtn" onclick="uploadDoc()">
+          <i data-lucide="upload"></i>업로드
+        </button>
+      </div>
+    </div>
+
+    <div class="doc-list" id="docList">
+      <div class="docs-empty">
+        <i data-lucide="file-x"></i>
+        <p>등록된 자료가 없습니다</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 관리자 -->
+  <section class="section" id="sec-admin">
+    <div class="admin-card">
+      <h2><i data-lucide="shield-alert"></i>관리자 도구</h2>
+
+      <!-- 인증 전 -->
+      <div id="adminLoginArea">
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:5px;font-size:0.83rem;color:var(--muted);margin-bottom:6px">
+            <i data-lucide="lock"></i>관리자 비밀번호
+          </label>
+          <input type="password" class="pw-input" id="adminPw" placeholder="비밀번호 입력" />
+        </div>
+        <button class="btn-verify" onclick="verifyAdmin()">
+          <i data-lucide="log-in"></i>관리자 인증
+        </button>
+      </div>
+
+      <!-- 인증 후 -->
+      <div id="adminPanel" style="display:none">
+        <div class="admin-verified-badge">
+          <i data-lucide="shield-check"></i>관리자 인증됨
+        </div>
+
+        <!-- 투표 종료 토글 -->
+        <div class="voting-status-box">
+          <div class="voting-status-info">
+            <span class="voting-status-label"><i data-lucide="flag"></i>투표 상태</span>
+            <span class="voting-status-val" id="adminVotingStatus">—</span>
+          </div>
+          <button class="btn-end-voting" id="endVotingBtn" onclick="toggleVoting()">
+            <i data-lucide="flag"></i><span id="endVotingLabel">투표 종료</span>
+          </button>
+        </div>
+
+        <div class="admin-divider"></div>
+
+        <!-- 전체 초기화 -->
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>
+          초기화 시 모든 작품과 투표 내역이 삭제됩니다.
+        </p>
+        <button class="btn-danger" onclick="resetAll()">
+          <i data-lucide="trash-2"></i>전체 초기화 (작품 + 투표)
+        </button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 라이트박스 -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()"><i data-lucide="x"></i></button>
+  <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()" />
+</div>
+
+<!-- 토스트 -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+  // ── 상태 ──
+  let myVotes = [];
+  let works = [];
+  let voterName = '';
+  let isAdmin = false;
+  let votingEnded = false;
+  let adminPassword = '';
+
+  // ── 커서 설정 (강이 캐릭터 머리) ──
+  // 한글 URL 대신 ASCII 경로 /cursor.png 사용 (서버에서 동일 파일 제공)
+  function setupCursor() {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const size = 64;
+        const c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        // 머리 부분 크롭: 가로 8~92%, 세로 0~60%
+        ctx.drawImage(img,
+          img.width * 0.08, 0,
+          img.width * 0.84, img.height * 0.60,
+          0, 0, size, size);
+        const url = c.toDataURL('image/png');
+        const old = document.getElementById('cursor-style');
+        if (old) old.remove();
+        const s = document.createElement('style');
+        s.id = 'cursor-style';
+        s.textContent = `html, body, * { cursor: url("${url}") 32 32, auto !important; }`;
+        document.head.appendChild(s);
+      } catch (e) { console.warn('커서 설정 실패:', e); }
+    };
+    img.onerror = () => console.warn('cursor.png 로드 실패 — 서버 재시작 필요');
+    img.src = '/cursor.png';
+  }
+
+  // ── 테마 이펙트 시스템 ──
+  const fx = {
+    canvas: null, ctx: null, animId: null,
+    particles: [], current: null,
+
+    init() {
+      this.canvas = document.getElementById('effectCanvas');
+      this.ctx = this.canvas.getContext('2d');
+      this._resize();
+      window.addEventListener('resize', () => { this._resize(); });
+    },
+
+    _resize() {
+      if (!this.canvas) return;
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    },
+
+    start(theme) {
+      this.stop();
+      this.current = theme;
+      // 벚꽃은 콘텐츠 위에, 민트봄 씬은 콘텐츠 뒤에
+      this.canvas.style.zIndex = theme === 'spring1' ? '2' : '0';
+      if (theme === 'spring1') this._initBlossom();
+      else if (theme === 'spring2') this._initMint();
+    },
+
+    stop() {
+      if (this.animId) cancelAnimationFrame(this.animId);
+      this.animId = null; this.particles = [];
+      if (this.ctx) this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.current = null;
+    },
+
+    /* ════════════════════════════
+       벚꽃 이펙트 — 꽃 + 낱장꽃잎
+       ════════════════════════════ */
+    _newBlossomParticle(scattered) {
+      const w = this.canvas.width, h = this.canvas.height;
+      const isFlower = Math.random() < 0.28; // 28% 는 전체 꽃
+      return {
+        type: isFlower ? 'flower' : 'petal',
+        x: Math.random() * (w + 60) - 30,
+        y: scattered ? Math.random() * h : -(isFlower ? 30 : 18),
+        size: isFlower ? Math.random() * 13 + 11 : Math.random() * 9 + 5,
+        vy: isFlower ? Math.random() * 0.7 + 0.2 : Math.random() * 1.3 + 0.45,
+        vx: Math.random() * 0.4 - 0.2,
+        angle: Math.random() * Math.PI * 2,
+        aSpeed: (Math.random() - 0.5) * (isFlower ? 0.012 : 0.048),
+        swing: Math.random() * Math.PI * 2,
+        swingS: Math.random() * 0.02 + 0.007,
+        alpha: Math.random() * 0.4 + 0.38,
+        sparkle: 0, sparkleCd: Math.floor(Math.random() * 240 + 90),
+        cv: Math.random() // colour variant
+      };
+    },
+
+    _initBlossom() {
+      this.particles = Array.from({length: 58}, () => this._newBlossomParticle(true));
+      this._animBlossom();
+    },
+
+    _animBlossom() {
+      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      this.particles.forEach((p, i) => {
+        p.swing += p.swingS;
+        p.x += Math.sin(p.swing) * 0.9 + p.vx;
+        p.y += p.vy;
+        p.angle += p.aSpeed;
+        if (--p.sparkleCd <= 0) { p.sparkle = 1; p.sparkleCd = Math.floor(Math.random() * 260 + 90); }
+        if (p.sparkle > 0) p.sparkle -= 0.055;
+
+        if (p.y > h + 35 || p.x < -40 || p.x > w + 40) {
+          this.particles[i] = this._newBlossomParticle(false); return;
+        }
+
+        const a = Math.min(p.alpha + p.sparkle * 0.32, 0.88);
+        if (p.type === 'flower') this._drawCherryFlower(ctx, p.x, p.y, p.size, p.angle, a, p.sparkle);
+        else this._drawCherryPetal(ctx, p.x, p.y, p.size, p.angle, a, p.cv, p.sparkle);
+      });
+
+      this.animId = requestAnimationFrame(() => this._animBlossom());
+    },
+
+    // 5장 꽃잎 벚꽃 전체
+    _drawCherryFlower(ctx, x, y, r, angle, alpha, sparkle) {
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(angle);
+      ctx.globalAlpha = alpha;
+      const l = r, pw = r * 0.54;
+      for (let i = 0; i < 5; i++) {
+        ctx.save();
+        ctx.rotate((i / 5) * Math.PI * 2);
+        const g = ctx.createLinearGradient(0, 0, 0, -l);
+        g.addColorStop(0, '#ffe4ef'); g.addColorStop(1, '#ffadd0');
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        // 끝부분 살짝 오목한 벚꽃 꽃잎 모양
+        ctx.bezierCurveTo(-pw*0.48, -l*0.28, -pw*0.58, -l*0.72, -pw*0.12, -l);
+        ctx.bezierCurveTo(-pw*0.04, -l*1.05, pw*0.04, -l*1.05, pw*0.12, -l);
+        ctx.bezierCurveTo(pw*0.58, -l*0.72, pw*0.48, -l*0.28, 0, 0);
+        ctx.closePath();
+        ctx.fillStyle = g; ctx.fill();
+        ctx.strokeStyle = 'rgba(255,140,185,0.2)'; ctx.lineWidth = 0.4; ctx.stroke();
+        ctx.restore();
+      }
+      // 중심부
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff82b4'; ctx.fill();
+      // 수술 (꽃술)
+      for (let i = 0; i < 8; i++) {
+        ctx.save(); ctx.rotate((i / 8) * Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,130,170,0.85)'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(0, -r * 0.13); ctx.lineTo(0, -r * 0.44); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -r * 0.44, 1.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff6090'; ctx.fill();
+        ctx.restore();
+      }
+      // 반짝임
+      if (sparkle > 0.12) {
+        ctx.globalAlpha = sparkle * 0.5;
+        ctx.beginPath(); ctx.arc(-r * 0.18, -r * 0.28, r * 0.22, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+      }
+      ctx.restore();
+    },
+
+    // 낱장 꽃잎
+    _drawCherryPetal(ctx, x, y, size, angle, alpha, cv, sparkle) {
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(angle);
+      ctx.globalAlpha = alpha;
+      const l = size, pw = size * 0.5;
+      const g = ctx.createLinearGradient(0, 0, 0, -l);
+      g.addColorStop(0, cv > 0.5 ? '#ffe8f0' : '#ffd6e5');
+      g.addColorStop(1, cv > 0.5 ? '#ffbad8' : '#ffaacb');
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-pw*0.48, -l*0.28, -pw*0.58, -l*0.72, -pw*0.12, -l);
+      ctx.bezierCurveTo(-pw*0.04, -l*1.05, pw*0.04, -l*1.05, pw*0.12, -l);
+      ctx.bezierCurveTo(pw*0.58, -l*0.72, pw*0.48, -l*0.28, 0, 0);
+      ctx.closePath();
+      ctx.fillStyle = g; ctx.fill();
+      // 꽃잎 결
+      ctx.strokeStyle = 'rgba(255,145,185,0.22)'; ctx.lineWidth = 0.55;
+      ctx.beginPath(); ctx.moveTo(0, l * 0.08); ctx.bezierCurveTo(0, -l*0.3, 0, -l*0.6, 0, -l*0.88); ctx.stroke();
+      if (sparkle > 0.12) {
+        ctx.globalAlpha = sparkle * 0.45;
+        ctx.beginPath(); ctx.arc(-pw*0.12, -l*0.28, pw * 0.22, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+      }
+      ctx.restore();
+    },
+
+    /* ════════════════════════════
+       민트봄 씬 — 나뭇가지+잎사귀 배경
+       ════════════════════════════ */
+    _initMint() {
+      // 날아다니는 잎사귀 파티클
+      this.particles = Array.from({length: 14}, () => this._newWindLeaf(true));
+      this._animMint();
+    },
+
+    _newWindLeaf(scattered) {
+      const w = this.canvas.width, h = this.canvas.height;
+      const greens = ['rgba(94,213,130,0.75)','rgba(72,199,112,0.68)','rgba(134,239,172,0.72)','rgba(166,246,201,0.70)'];
+      return {
+        x: scattered ? Math.random() * w : -25,
+        y: Math.random() * h * 0.65 + h * 0.05,
+        size: Math.random() * 11 + 7,
+        vx: Math.random() * 1.2 + 0.6,
+        vy: Math.random() * 0.45 - 0.22,
+        angle: Math.random() * Math.PI * 2,
+        aSpeed: (Math.random() - 0.5) * 0.05,
+        alpha: Math.random() * 0.5 + 0.35,
+        color: greens[Math.floor(Math.random() * greens.length)],
+        swing: Math.random() * Math.PI * 2,
+        swingS: Math.random() * 0.016 + 0.006
+      };
+    },
+
+    _animMint() {
+      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const t = Date.now() / 1000;
+      ctx.clearRect(0, 0, w, h);
+
+      // ① 안개 낀 봄 배경
+      this._drawMistySky(ctx, w, h);
+      // ② 뒤쪽 흐릿한 나무들
+      this._drawBgTrees(ctx, w, h);
+      // ③ 중간 안개 띠
+      this._drawMistBand(ctx, w, h);
+      // ④ 위에서 내려오는 나뭇가지 (좌/우)
+      this._drawHangingBranch(ctx, w, h, t, false);
+      this._drawHangingBranch(ctx, w, h, t, true);
+      // ⑤ 아래 초원
+      this._drawGround(ctx, w, h, t);
+
+      // ⑥ 날아다니는 잎사귀
+      this.particles.forEach((p, i) => {
+        p.swing += p.swingS; p.x += p.vx; p.y += Math.sin(p.swing) * 0.45 + p.vy; p.angle += p.aSpeed;
+        if (p.x > w + 30) { this.particles[i] = this._newWindLeaf(false); return; }
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+        ctx.globalAlpha = p.alpha;
+        this._leafPath(ctx, p.size); ctx.fillStyle = p.color; ctx.fill();
+        ctx.restore();
+      });
+
+      this.animId = requestAnimationFrame(() => this._animMint());
+    },
+
+    _drawMistySky(ctx, w, h) {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0,   'rgba(195,232,205,0.70)');
+      g.addColorStop(0.45,'rgba(218,243,220,0.60)');
+      g.addColorStop(0.75,'rgba(200,238,210,0.55)');
+      g.addColorStop(1,   'rgba(168,220,178,0.65)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    },
+
+    _drawBgTrees(ctx, w, h) {
+      const trees = [
+        {x:w*0.18,y:h*0.58,r:h*0.24,op:0.14},{x:w*0.38,y:h*0.62,r:h*0.20,op:0.11},
+        {x:w*0.55,y:h*0.60,r:h*0.28,op:0.13},{x:w*0.72,y:h*0.57,r:h*0.22,op:0.15},
+        {x:w*0.88,y:h*0.60,r:h*0.19,op:0.12},
+      ];
+      trees.forEach(t => {
+        // 줄기
+        ctx.strokeStyle = `rgba(80,55,30,${t.op * 1.3})`; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(t.x, h * 0.82); ctx.lineTo(t.x, t.y); ctx.stroke();
+        // 잎 구름
+        const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r);
+        g.addColorStop(0, `rgba(82,175,100,${t.op * 1.8})`);
+        g.addColorStop(1, 'rgba(82,175,100,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill();
+      });
+    },
+
+    _drawMistBand(ctx, w, h) {
+      const g = ctx.createLinearGradient(0, h*0.32, 0, h*0.62);
+      g.addColorStop(0, 'rgba(245,252,245,0)');
+      g.addColorStop(0.45,'rgba(245,252,245,0.52)');
+      g.addColorStop(1, 'rgba(245,252,245,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, h*0.32, w, h*0.30);
+    },
+
+    // 위에서 뻗어 내려오는 가지
+    _drawHangingBranch(ctx, w, h, t, isRight) {
+      const sx = isRight ? w * 1.02 : -w * 0.02;
+      const sy = -5;
+      const ex = isRight ? w * 0.36 : w * 0.64;
+      const ey = h * 0.40;
+      const cpx1 = isRight ? w * 0.82 : w * 0.18;
+      const cpy1 = h * 0.02;
+      const cpx2 = isRight ? w * 0.52 : w * 0.48;
+      const cpy2 = h * 0.20;
+      const sw = Math.sin(t * 0.65) * 5; // 전체 흔들림
+
+      // 굵은 주 가지
+      ctx.save();
+      ctx.strokeStyle = 'rgba(65,40,18,0.80)'; ctx.lineWidth = 10; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(sx, sy);
+      ctx.bezierCurveTo(cpx1, cpy1, cpx2 + sw, cpy2 + sw * 0.5, ex + sw * 1.5, ey + sw);
+      ctx.stroke();
+
+      // 잔가지들 (세로로 늘어짐)
+      const subCount = 9;
+      for (let si = 0; si < subCount; si++) {
+        const tb = (si + 1) / (subCount + 1);
+        const mt = 1 - tb;
+        // 베지어 곡선 위 점
+        const bx = mt*mt*mt*sx + 3*mt*mt*tb*cpx1 + 3*mt*tb*tb*(cpx2+sw) + tb*tb*tb*(ex+sw*1.5);
+        const by = mt*mt*mt*sy + 3*mt*mt*tb*cpy1 + 3*mt*tb*tb*(cpy2+sw*0.5) + tb*tb*tb*(ey+sw);
+        // 잔가지 길이와 각도 (결정론적)
+        const subLen = (28 + (si * 17 % 38)) * (h / 550);
+        const baseAng = isRight ? -0.5 - si * 0.08 : 0.5 + si * 0.08;
+        const sway2 = Math.sin(t * 1.0 + si * 0.6) * 0.18;
+        const ang = baseAng + sway2;
+        const ex2 = bx + Math.sin(ang) * subLen * (isRight ? -1 : 1);
+        const ey2 = by + subLen + Math.sin(t * 0.8 + si * 0.4) * 6;
+
+        ctx.strokeStyle = 'rgba(65,40,18,0.55)'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ex2, ey2); ctx.stroke();
+
+        // 잔가지 끝 잎사귀 묶음
+        const leafN = 3 + (si % 3);
+        for (let li = 0; li < leafN; li++) {
+          const spread = (li / leafN) * Math.PI * 0.9 - Math.PI * 0.45;
+          const lAngle = spread + Math.sin(t * 1.2 + si * 0.7 + li * 0.5) * 0.22;
+          const lDist = (10 + li * 9) * (h / 550);
+          const lx = ex2 + Math.cos(lAngle) * lDist * (isRight ? -1 : 1);
+          const ly = ey2 + Math.sin(lAngle) * lDist * 0.6 + lDist * 0.5;
+          const lSize = (13 + li * 5) * (h / 550);
+          this._drawLeaf(ctx, lx, ly, lSize, lAngle + (isRight ? Math.PI : 0), 0.78);
+          // 잎 사이사이 작은 꽃
+          if (li === 1 && si % 3 === 0) this._drawMiniFlower(ctx, lx + 5, ly - 4, 5 * h/550, 0.65);
+        }
+      }
+
+      // 주 가지 위 잎사귀
+      for (let li = 0; li < 13; li++) {
+        const tl = (li + 0.5) / 13;
+        const mt2 = 1 - tl;
+        const lx = mt2*mt2*mt2*sx + 3*mt2*mt2*tl*cpx1 + 3*mt2*tl*tl*(cpx2+sw) + tl*tl*tl*(ex+sw*1.5);
+        const ly = mt2*mt2*mt2*sy + 3*mt2*mt2*tl*cpy1 + 3*mt2*tl*tl*(cpy2+sw*0.5) + tl*tl*tl*(ey+sw);
+        const lAng = (li % 2 === 0 ? 1 : -1) * (0.55 + li * 0.03)
+                   + Math.sin(t * 0.9 + li * 0.65) * 0.2;
+        const lSz = (13 + li * 1.5) * (h / 550);
+        this._drawLeaf(ctx, lx + Math.sin(t * 0.7 + li) * 3, ly + lSz * 0.4, lSz, lAng, 0.80);
+      }
+      ctx.restore();
+    },
+
+    _drawLeaf(ctx, x, y, size, angle, alpha) {
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(angle); ctx.globalAlpha = alpha;
+      const l = size, w = size * 0.54;
+      const g = ctx.createLinearGradient(0, -l, 0, l * 0.25);
+      g.addColorStop(0, '#5ec882'); g.addColorStop(0.5, '#4ade80'); g.addColorStop(1, '#78edaa');
+      this._leafPath(ctx, size); ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(0, l * 0.2); ctx.lineTo(0, -l * 0.82); ctx.stroke();
+      ctx.restore();
+    },
+
+    _leafPath(ctx, size) {
+      const l = size, w = size * 0.54;
+      ctx.beginPath();
+      ctx.moveTo(0, l * 0.25);
+      ctx.bezierCurveTo(-w*0.65, 0, -w*0.7, -l*0.6, 0, -l);
+      ctx.bezierCurveTo(w*0.7, -l*0.6, w*0.65, 0, 0, l*0.25);
+      ctx.closePath();
+    },
+
+    _drawMiniFlower(ctx, x, y, r, alpha) {
+      ctx.save(); ctx.translate(x, y); ctx.globalAlpha = alpha;
+      for (let i = 0; i < 5; i++) {
+        ctx.save(); ctx.rotate((i / 5) * Math.PI * 2);
+        ctx.beginPath(); ctx.ellipse(0, -r * 0.68, r * 0.32, r * 0.52, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffcce0'; ctx.fill(); ctx.restore();
+      }
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff80b0'; ctx.fill();
+      ctx.restore();
+    },
+
+    _drawGround(ctx, w, h, t) {
+      // 초원 그라디언트
+      const g = ctx.createLinearGradient(0, h * 0.73, 0, h);
+      g.addColorStop(0, 'rgba(95,195,118,0)');
+      g.addColorStop(0.18,'rgba(85,185,108,0.42)');
+      g.addColorStop(0.55,'rgba(72,172,95,0.62)');
+      g.addColorStop(1,   'rgba(58,158,80,0.72)');
+      ctx.fillStyle = g; ctx.fillRect(0, h * 0.73, w, h * 0.27);
+
+      // 풀잎
+      const bladeCount = 35;
+      for (let i = 0; i < bladeCount; i++) {
+        const bx = (i / bladeCount) * w * 1.15 - w * 0.08;
+        const by = h * 0.77 + (i * 7 % 18);
+        const bh = (32 + i * 11 % 30) * (h / 550);
+        const sw = Math.sin(t * 1.3 + i * 0.45) * 9;
+        ctx.strokeStyle = `rgba(68,180,92,${0.38 + (i % 4) * 0.08})`;
+        ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + sw * 0.6, by - bh * 0.5, bx + sw, by - bh);
+        ctx.stroke();
+      }
+
+      // 바닥 꽃들
+      const flowers = [
+        {x:w*0.07,y:h*0.86,r:7,isWhite:false},{x:w*0.14,y:h*0.89,r:5.5,isWhite:false},
+        {x:w*0.23,y:h*0.87,r:6,isWhite:true}, {x:w*0.32,y:h*0.91,r:9,isWhite:true},
+        {x:w*0.44,y:h*0.92,r:8,isWhite:true}, {x:w*0.56,y:h*0.91,r:9,isWhite:true},
+        {x:w*0.67,y:h*0.90,r:7,isWhite:true}, {x:w*0.78,y:h*0.88,r:6,isWhite:false},
+        {x:w*0.87,y:h*0.86,r:7,isWhite:false},{x:w*0.93,y:h*0.89,r:5.5,isWhite:false},
+      ];
+      flowers.forEach((f, i) => {
+        const sw = Math.sin(t * 0.95 + i * 0.7) * 2.5;
+        const r = f.r * (h / 550);
+        if (f.isWhite) {
+          // 데이지 (흰 꽃)
+          ctx.save(); ctx.translate(f.x + sw, f.y); ctx.globalAlpha = 0.72;
+          for (let p = 0; p < 8; p++) {
+            ctx.save(); ctx.rotate((p / 8) * Math.PI * 2);
+            ctx.beginPath(); ctx.ellipse(0, -r * 0.68, r * 0.28, r * 0.48, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill(); ctx.restore();
+          }
+          ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+          ctx.fillStyle = '#f0c835'; ctx.fill();
+          ctx.restore();
+        } else {
+          this._drawMiniFlower(ctx, f.x + sw, f.y, r, 0.70);
+        }
+      });
+    }
+  };
+
+  // ── 테마 ──
+  const VALID_THEMES = ['dark', 'white', 'spring1', 'spring2'];
+
+  function applyTheme(t) {
+    if (!VALID_THEMES.includes(t)) t = 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.t === t);
+    });
+    localStorage.setItem('theme', t);
+    // 이펙트 전환
+    if (fx.canvas) {
+      if (t === 'spring1' || t === 'spring2') fx.start(t);
+      else fx.stop();
+    }
+  }
+
+  (function initTheme() {
+    const saved = localStorage.getItem('theme') || 'dark';
+    applyTheme(saved);
+  })();
+
+  // ── 투표자 이름 ──
+  const voterInput = document.getElementById('voterName');
+  voterInput.value = localStorage.getItem('voterName') || '';
+
+  voterInput.addEventListener('input', async () => {
+    voterName = voterInput.value.trim();
+    localStorage.setItem('voterName', voterName);
+    if (voterName) await fetchMyVotes();
+    else { myVotes = []; updateVoteBadge(); renderGallery(); }
+  });
+
+  voterInput.addEventListener('blur', async () => {
+    if (voterInput.value.trim()) await loadWorks();
+  });
+
+  // ── 초기화 ──
+  window.addEventListener('DOMContentLoaded', async () => {
+    lucide.createIcons();
+    setupCursor();
+    fx.init();
+    // 저장된 테마가 spring 계열이면 이펙트 시작
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'spring1' || savedTheme === 'spring2') fx.start(savedTheme);
+    voterName = voterInput.value.trim();
+    if (voterName) await fetchMyVotes();
+    await loadVotingStatus();
+    await loadWorks();
+    setInterval(loadWorks, 30000);
+    setInterval(loadVotingStatus, 10000);
+  });
+
+  // ── 투표 상태 ──
+  async function loadVotingStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      votingEnded = data.votingEnded;
+      updateAdminVotingStatus();
+    } catch {}
+  }
+
+  function updateAdminVotingStatus() {
+    const statusEl = document.getElementById('adminVotingStatus');
+    const btnEl = document.getElementById('endVotingBtn');
+    const labelEl = document.getElementById('endVotingLabel');
+    if (!statusEl) return;
+    if (votingEnded) {
+      statusEl.textContent = '종료됨 (결과 공개 중)';
+      statusEl.className = 'voting-status-val status-closed';
+      btnEl.className = 'btn-end-voting reopen';
+      labelEl.textContent = '투표 재개';
+    } else {
+      statusEl.textContent = '진행 중';
+      statusEl.className = 'voting-status-val status-open';
+      btnEl.className = 'btn-end-voting';
+      labelEl.textContent = '투표 종료';
+    }
+  }
+
+  // ── 결과 표시 여부 ──
+  function updateResultsVisibility() {
+    const canSee = votingEnded || isAdmin;
+    document.getElementById('votingInProgress').style.display = canSee ? 'none' : 'block';
+    document.getElementById('resultsContent').style.display = canSee ? 'block' : 'none';
+  }
+
+  // ── 내 투표 조회 ──
+  async function fetchMyVotes() {
+    if (!voterName) return;
+    try {
+      const res = await fetch(`/api/votes/${encodeURIComponent(voterName)}`);
+      const data = await res.json();
+      myVotes = data.votes || [];
+      updateVoteBadge();
+    } catch {}
+  }
+
+  function updateVoteBadge() {
+    const badge = document.getElementById('voteBadge');
+    badge.innerHTML = `<i data-lucide="heart"></i> ${myVotes.length} / 2`;
+    badge.className = 'vote-badge' + (myVotes.length >= 2 ? ' full' : '');
+    lucide.createIcons();
+  }
+
+  // ── 작품 목록 ──
+  async function loadWorks() {
+    try {
+      const res = await fetch('/api/works');
+      works = await res.json();
+      document.getElementById('workCount').textContent = `${works.length}개`;
+      renderGallery();
+    } catch { toast('데이터를 불러오지 못했습니다.', 'error'); }
+  }
+
+  function renderGallery() {
+    const grid = document.getElementById('galleryGrid');
+    if (!works.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎨</div><p>아직 업로드된 작품이 없습니다</p></div>`;
+      lucide.createIcons();
+      return;
+    }
+
+    grid.innerHTML = works.map((w, i) => {
+      const rank = i + 1;
+      const voted = myVotes.includes(w.id);
+      const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+      const rankBadge = rank <= 3 ? `<div class="rank-badge">${['🥇','🥈','🥉'][rank-1]}</div>` : '';
+      const adminDeleteBtn = isAdmin
+        ? `<button class="admin-delete-btn" onclick="adminDeleteWork('${w.id}', event)" title="삭제"><i data-lucide="trash-2"></i></button>`
+        : '';
+
+      return `
+        <div class="work-card${rankClass}" data-id="${w.id}">
+          ${rankBadge}
+          ${adminDeleteBtn}
+          <div class="work-img-wrap" onclick="openLightbox('/uploads/${w.filename}')">
+            <img src="/uploads/${w.filename}" alt="${escHtml(w.title)}" loading="lazy" />
+          </div>
+          <div class="work-info">
+            <div class="work-title" title="${escHtml(w.title)}">${escHtml(w.title)}</div>
+            <div class="work-author"><i data-lucide="user-round"></i>by ${escHtml(w.author)}</div>
+            <div class="work-footer">
+              <button class="vote-btn ${voted ? 'voted' : ''}" onclick="vote('${w.id}')" title="${voted ? '투표 취소' : '투표하기'}">
+                <i data-lucide="heart"></i>
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+
+  // ── 투표 ──
+  async function vote(workId) {
+    if (!voterName) { toast('상단에 이름을 입력해주세요!', 'error'); return; }
+
+    const work = works.find(w => w.id === workId);
+    const isVoted = myVotes.includes(workId);
+
+    if (!isVoted && myVotes.length >= 2) {
+      toast('이미 2표를 모두 사용했습니다. 투표를 취소하고 다시 선택할 수 있어요.', 'error'); return;
+    }
+
+    try {
+      const res = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voterName, workId })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+
+      myVotes = data.myVotes;
+      updateVoteBadge();
+      await loadWorks();
+
+      if (data.action === 'added') toast(`"${work?.title || '작품'}"에 투표했어요! (${myVotes.length}/2)`, 'success');
+      else toast('투표를 취소했습니다.', '');
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 업로드 ──
+  function previewFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const wrap = document.getElementById('previewWrap');
+    const img = document.getElementById('previewImg');
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; wrap.style.display = 'block'; };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleUpload(e) {
+    e.preventDefault();
+    const author = document.getElementById('uploadAuthor').value.trim();
+    const title = document.getElementById('uploadTitle').value.trim();
+    const file = document.getElementById('fileInput').files[0];
+    const btn = document.getElementById('uploadBtn');
+
+    if (!author || !file) { toast('이름과 이미지를 모두 입력해주세요.', 'error'); return; }
+
+    const fd = new FormData();
+    fd.append('author', author);
+    fd.append('title', title);
+    fd.append('image', file);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 업로드 중...';
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+
+      toast('작품이 업로드됐습니다! 🎉', 'success');
+      document.getElementById('uploadForm').reset();
+      document.getElementById('previewWrap').style.display = 'none';
+      showSection('gallery');
+      await loadWorks();
+    } catch { toast('업로드 중 오류가 발생했습니다.', 'error'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="upload-cloud"></i>작품 업로드하기';
+      lucide.createIcons();
+    }
+  }
+
+  // ── 결과 ──
+  async function loadResults() {
+    updateResultsVisibility();
+    if (!votingEnded && !isAdmin) return;
+
+    try {
+      const res = await fetch('/api/results');
+      const data = await res.json();
+      const { results, totalVoters } = data;
+
+      document.getElementById('resultsSubtitle').textContent =
+        `총 ${results.length}개 작품 · ${totalVoters}명 참여`;
+
+      const top3 = results.slice(0, 3);
+      const podium = document.getElementById('podiumWrap');
+
+      if (!top3.length) {
+        podium.innerHTML = '<p style="text-align:center;color:var(--muted)">아직 결과가 없습니다</p>';
+      } else {
+        const order = [top3[1], top3[0], top3[2]].filter(Boolean);
+        const rankEmoji = ['🥈','🥇','🥉'];
+        const pClass = ['p2','p1','p3'];
+        podium.innerHTML = order.map((w, i) => `
+          <div class="podium-item ${pClass[i]}">
+            <div class="podium-img-wrap">
+              <img src="/uploads/${w.filename}" alt="${escHtml(w.title)}" />
+            </div>
+            <div class="podium-rank">${rankEmoji[i]}</div>
+            <div class="podium-name">${escHtml(w.author)}</div>
+            <div class="podium-votes"><i data-lucide="heart"></i>${w.voteCount}표</div>
+          </div>`).join('');
+      }
+
+      const list = document.getElementById('resultsList');
+      list.innerHTML = results.map((w, i) => `
+        <div class="result-row">
+          <span class="result-rank">${i < 3 ? ['🥇','🥈','🥉'][i] : i+1}</span>
+          <img class="result-thumb" src="/uploads/${w.filename}" alt="" />
+          <div class="result-info">
+            <div class="result-title">${escHtml(w.title)}</div>
+            <div class="result-author"><i data-lucide="user-round"></i>by ${escHtml(w.author)}</div>
+          </div>
+          <span class="result-votes"><i data-lucide="heart"></i>${w.voteCount}</span>
+        </div>`).join('') || '<p style="text-align:center;color:var(--muted);padding:40px">집계 중...</p>';
+
+      lucide.createIcons();
+    } catch { toast('결과를 불러오지 못했습니다.', 'error'); }
+  }
+
+  // ── 관리자 인증 ──
+  async function verifyAdmin() {
+    const pw = document.getElementById('adminPw').value;
+    if (!pw) { toast('비밀번호를 입력해주세요.', 'error'); return; }
+
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      const data = await res.json();
+
+      if (data.valid) {
+        isAdmin = true;
+        adminPassword = pw;
+        document.getElementById('adminLoginArea').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('docUploadBox').classList.add('visible');
+        updateAdminVotingStatus();
+        lucide.createIcons();
+        toast('관리자로 인증되었습니다.', 'success');
+      } else {
+        toast('비밀번호가 틀렸습니다.', 'error');
+      }
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 투표 종료 토글 ──
+  async function toggleVoting() {
+    try {
+      const res = await fetch('/api/admin/end-voting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+
+      votingEnded = data.votingEnded;
+      updateAdminVotingStatus();
+      lucide.createIcons();
+      toast(votingEnded ? '투표가 종료됐습니다. 모두가 결과를 볼 수 있어요.' : '투표가 재개됐습니다.', 'success');
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 전체 초기화 ──
+  async function resetAll() {
+    if (!confirm('정말로 모든 작품과 투표를 초기화하시겠습니까?')) return;
+
+    try {
+      const res = await fetch('/api/admin/reset', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+
+      myVotes = [];
+      updateVoteBadge();
+      toast('초기화 완료', 'success');
+      await loadWorks();
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 작품 삭제 (관리자) ──
+  async function adminDeleteWork(workId, event) {
+    event.stopPropagation();
+    if (!confirm('이 작품을 삭제하시겠습니까?')) return;
+
+    try {
+      const res = await fetch(`/api/admin/work/${workId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      toast('작품이 삭제됐습니다.', 'success');
+      await loadWorks();
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 섹션 전환 ──
+  function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`sec-${name}`).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['gallery','upload','results','docs','admin'][i] === name);
+    });
+    if (name === 'results') loadResults();
+    if (name === 'gallery') loadWorks();
+    if (name === 'docs') loadDocs();
+  }
+
+  // ── 자료 다운로드 ──
+  async function loadDocs() {
+    try {
+      const res = await fetch('/api/docs');
+      const docs = await res.json();
+      renderDocs(docs);
+    } catch { toast('자료 목록을 불러오지 못했습니다.', 'error'); }
+  }
+
+  function renderDocs(docs) {
+    const list = document.getElementById('docList');
+    if (!docs.length) {
+      list.innerHTML = `<div class="docs-empty"><i data-lucide="file-x"></i><p>등록된 자료가 없습니다</p></div>`;
+      lucide.createIcons(); return;
+    }
+
+    list.innerHTML = docs.map(d => {
+      const ext = d.displayName.split('.').pop().toLowerCase();
+      const iconMap = { hwp: 'file-text', hwpx: 'file-text', pdf: 'file-type', doc: 'file-text', docx: 'file-text', ppt: 'presentation', pptx: 'presentation', zip: 'archive', txt: 'file-code' };
+      const icon = iconMap[ext] || 'file';
+      const size = d.size > 1024*1024 ? (d.size/1024/1024).toFixed(1)+'MB' : Math.round(d.size/1024)+'KB';
+      const date = new Date(d.uploadedAt).toLocaleDateString('ko-KR');
+      const deleteBtn = isAdmin
+        ? `<button class="btn-doc-delete" onclick="deleteDoc('${escHtml(d.filename)}')" title="삭제"><i data-lucide="trash-2"></i></button>`
+        : '';
+      return `
+        <div class="doc-row">
+          <div class="doc-icon"><i data-lucide="${icon}"></i></div>
+          <div class="doc-info">
+            <div class="doc-name" title="${escHtml(d.displayName)}">${escHtml(d.displayName)}</div>
+            <div class="doc-meta">${size} · ${date}</div>
+          </div>
+          <a href="/api/docs/download/${encodeURIComponent(d.filename)}" class="btn-download" download>
+            <i data-lucide="download"></i>다운로드
+          </a>
+          ${deleteBtn}
+        </div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+
+  function onDocFileChange(input) {
+    const el = document.getElementById('docFileName');
+    el.textContent = input.files[0] ? input.files[0].name : '파일을 선택하세요';
+  }
+
+  async function uploadDoc() {
+    const input = document.getElementById('docFileInput');
+    const btn = document.getElementById('docUploadBtn');
+    if (!input.files[0]) { toast('파일을 선택해주세요.', 'error'); return; }
+
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 업로드 중...';
+    try {
+      const res = await fetch('/api/admin/docs/upload', {
+        method: 'POST',
+        headers: { 'x-admin-password': adminPassword },
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      toast(`"${data.displayName}" 업로드 완료!`, 'success');
+      input.value = '';
+      document.getElementById('docFileName').textContent = '파일을 선택하세요';
+      await loadDocs();
+    } catch { toast('업로드 중 오류가 발생했습니다.', 'error'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="upload"></i>업로드';
+      lucide.createIcons();
+    }
+  }
+
+  async function deleteDoc(filename) {
+    if (!confirm('이 자료를 삭제하시겠습니까?')) return;
+    try {
+      const res = await fetch(`/api/admin/docs/${encodeURIComponent(filename)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      toast('자료가 삭제됐습니다.', 'success');
+      await loadDocs();
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 라이트박스 ──
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  // ── 드래그앤드롭 ──
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) { document.getElementById('fileInput').files = e.dataTransfer.files; previewFile(document.getElementById('fileInput')); }
+  });
+
+  // ── 토스트 ──
+  function toast(msg, type = '') {
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+    el.innerHTML = `<i data-lucide="${icon}"></i>${escHtml(msg)}`;
+    wrap.appendChild(el);
+    lucide.createIcons();
+    setTimeout(() => el.remove(), 3200);
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
