@@ -487,7 +487,7 @@
 
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
     .empty-state .icon { font-size: 3.5rem; margin-bottom: 16px; }
-    .empty-state .char-img { width: 230px; height: 230px; object-fit: contain; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto; }
+    .empty-state .char-img { width: 230px; height: 230px; object-fit: contain; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto; filter: drop-shadow(0 8px 24px rgba(180,60,100,0.28)) drop-shadow(0 0 2px rgba(255,255,255,0.9)); }
     .empty-state p { font-size: 0.98rem; }
 
     /* ── 결과 ── */
@@ -1382,16 +1382,29 @@
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // 바닥 꽃잎 — 이미지 타일링
-      const floorH = h * 0.30;
+      // 바닥 꽃잎 — 전체 너비로 스케일 후 상단 페이드 블렌딩
+      const floorH = h * 0.32;
       const floorY = h - floorH;
       if (this.floorImg && this.floorImg.complete && this.floorImg.naturalWidth > 0) {
-        const aspect = this.floorImg.naturalWidth / this.floorImg.naturalHeight;
-        const imgW = floorH * aspect;
+        const iw = this.floorImg.naturalWidth, ih = this.floorImg.naturalHeight;
+        const scale = w / iw;
+        const drawW = w, drawH = ih * scale;
+        const drawY = h - drawH;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, floorY, w, floorH);
+        ctx.clip();
         ctx.globalAlpha = 1;
-        for (let x = 0; x < w + imgW; x += imgW) {
-          ctx.drawImage(this.floorImg, x, floorY, imgW, floorH);
-        }
+        ctx.drawImage(this.floorImg, 0, drawY, drawW, drawH);
+        // 상단 자연스럽게 페이드아웃
+        const fadeH = floorH * 0.5;
+        const grad = ctx.createLinearGradient(0, floorY, 0, floorY + fadeH);
+        grad.addColorStop(0, 'rgba(0,0,0,1)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, floorY, w, fadeH);
+        ctx.restore();
       }
 
       // 흩날리는 꽃잎 — 배경 제거된 이미지 그대로 사용
