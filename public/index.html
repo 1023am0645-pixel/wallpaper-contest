@@ -1104,7 +1104,7 @@
     </div>
     <div class="gallery-grid" id="galleryGrid">
       <div class="empty-state" style="grid-column:1/-1">
-        <img src="/cursor.png" alt="강이" class="char-img" onerror="this.style.display='none'">
+        <img src="/강이.png" alt="강이" class="char-img" onerror="this.style.display='none'">
         <p>아직 업로드된 작품이 없습니다</p>
       </div>
     </div>
@@ -1361,24 +1361,32 @@
         tiltY: Math.random() * Math.PI * 2,
         tiltSpeed: Math.random() * 0.016 + 0.005,
         alpha: Math.random() * 0.2 + 0.75,
-        cv: Math.floor(Math.random() * 4)
+        cv: Math.floor(Math.random() * 8)
       };
     },
 
     _initBlossom() {
       const w = this.canvas.width, h = this.canvas.height;
+
+      // 이미지 로드
+      this.floorImg = new Image();
+      this.floorImg.src = '/floor-petals.png';
+      this.petalImg = new Image();
+      this.petalImg.src = '/falling-petals.png';
+
       this.particles = Array.from({length: 22}, () => this._newBlossomParticle(true));
-      // 바닥 꽃잎 — 질감 패턴처럼 빽빽하게
-      this.floorPetals = Array.from({length: 160}, () => ({
+
+      // 바닥 꽃잎 캔버스 폴백용
+      this.floorPetals = Array.from({length: 200}, () => ({
         x: Math.random() * w * 1.2 - w * 0.1,
-        y: h * 0.76 + Math.random() * h * 0.26,
-        size: Math.random() * 14 + 16,
+        y: h * 0.73 + Math.random() * h * 0.29,
+        size: Math.random() * 16 + 18,
         angle: Math.random() * Math.PI * 2,
         swayOff: Math.random() * Math.PI * 2,
         swayAmp: Math.random() * 0.015 + 0.004,
         swaySpeed: Math.random() * 0.2 + 0.08,
         cv: Math.floor(Math.random() * 4),
-        alpha: Math.random() * 0.25 + 0.65,
+        alpha: Math.random() * 0.25 + 0.7,
         depth: Math.random()
       }));
       this._animBlossom();
@@ -1389,27 +1397,44 @@
       const t = Date.now() / 1000;
       ctx.clearRect(0, 0, w, h);
 
-      // 바닥 꽃잎 — 질감 패턴 스타일 (낱장 꽃잎, 깊이 순)
-      const sortedFloor = [...this.floorPetals].sort((a, b) => a.depth - b.depth);
-      sortedFloor.forEach(fp => {
-        const sway = Math.sin(t * fp.swaySpeed + fp.swayOff) * fp.swayAmp;
-        ctx.save();
-        ctx.translate(fp.x, fp.y);
-        ctx.rotate(fp.angle + sway);
-        ctx.scale(1, 0.62);
-        ctx.globalAlpha = fp.alpha;
-        const l = fp.size, lw = fp.size * 0.6;
-        const g = ctx.createRadialGradient(0, -l*0.2, 0, 0, -l*0.3, l*1.05);
-        g.addColorStop(0, '#fff5f8');
-        g.addColorStop(0.25, fp.cv < 2 ? '#ffd8e8' : '#ffc8e0');
-        g.addColorStop(0.65, fp.cv < 2 ? '#f8a8c8' : '#f090b8');
-        g.addColorStop(1, fp.cv < 2 ? '#e880a8' : '#d86898');
-        ctx.beginPath();
-        this._petalShape(ctx, l, lw);
-        ctx.fillStyle = g;
-        ctx.fill();
-        ctx.restore();
-      });
+      // 바닥 꽃잎 — 이미지 우선, 없으면 캔버스 폴백
+      const floorH = h * 0.28;
+      const floorY = h - floorH;
+      if (this.floorImg && this.floorImg.complete && this.floorImg.naturalWidth > 0) {
+        const aspect = this.floorImg.naturalWidth / this.floorImg.naturalHeight;
+        const imgW = floorH * aspect;
+        ctx.globalAlpha = 1;
+        for (let x = 0; x < w + imgW; x += imgW) {
+          ctx.drawImage(this.floorImg, x, floorY, imgW, floorH);
+        }
+      } else {
+        const sortedFloor = [...this.floorPetals].sort((a, b) => a.depth - b.depth);
+        sortedFloor.forEach(fp => {
+          const sway = Math.sin(t * fp.swaySpeed + fp.swayOff) * fp.swayAmp;
+          ctx.save();
+          ctx.translate(fp.x, fp.y);
+          ctx.rotate(fp.angle + sway);
+          ctx.scale(1, 0.62);
+          ctx.globalAlpha = fp.alpha;
+          const l = fp.size, lw = fp.size * 0.6;
+          const g = ctx.createRadialGradient(0, -l*0.2, 0, 0, -l*0.3, l*1.05);
+          g.addColorStop(0, '#fff5f8');
+          g.addColorStop(0.25, fp.cv < 2 ? '#ffd8e8' : '#ffc8e0');
+          g.addColorStop(0.65, fp.cv < 2 ? '#f8a8c8' : '#f090b8');
+          g.addColorStop(1, fp.cv < 2 ? '#e880a8' : '#d86898');
+          ctx.beginPath();
+          this._petalShape(ctx, l, lw);
+          ctx.fillStyle = g;
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      // 흩날리는 꽃잎 — 이미지 우선, 없으면 캔버스 폴백
+      const useImg = this.petalImg && this.petalImg.complete && this.petalImg.naturalWidth > 0;
+      const cols = 4, rows = 2;
+      const cellW = useImg ? this.petalImg.naturalWidth / cols : 0;
+      const cellH = useImg ? this.petalImg.naturalHeight / rows : 0;
 
       this.particles.forEach((p, i) => {
         p.swing += p.swingS;
@@ -1422,8 +1447,25 @@
           this.particles[i] = this._newBlossomParticle(false); return;
         }
 
-        const tiltScale = 0.6 + Math.abs(Math.cos(p.tiltY)) * 0.4; // 0.6~1.0
-        this._draw3DPetal(ctx, p.x, p.y, p.size, p.angle, tiltScale, p.alpha, p.cv);
+        const tiltScale = 0.6 + Math.abs(Math.cos(p.tiltY)) * 0.4;
+
+        if (useImg) {
+          const gx = p.cv % cols;
+          const gy = Math.floor(p.cv / cols) % rows;
+          const drawSize = p.size * 3.2;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.scale(1, tiltScale);
+          ctx.globalAlpha = p.alpha;
+          ctx.drawImage(this.petalImg,
+            gx * cellW, gy * cellH, cellW, cellH,
+            -drawSize / 2, -drawSize / 2, drawSize, drawSize
+          );
+          ctx.restore();
+        } else {
+          this._draw3DPetal(ctx, p.x, p.y, p.size, p.angle, tiltScale, p.alpha, p.cv);
+        }
       });
 
       this.animId = requestAnimationFrame(() => this._animBlossom());
@@ -1783,7 +1825,7 @@
   function renderGallery() {
     const grid = document.getElementById('galleryGrid');
     if (!works.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><img src="/cursor.png" alt="강이" class="char-img" onerror="this.style.display='none'"><p>아직 업로드된 작품이 없습니다</p></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><img src="/강이.png" alt="강이" class="char-img" onerror="this.style.display='none'"><p>아직 업로드된 작품이 없습니다</p></div>`;
       lucide.createIcons();
       return;
     }
