@@ -1366,11 +1366,29 @@
     },
 
     _initBlossom() {
-      // 바닥 꽃잎 이미지 (배경 제거된 버전)
-      this.floorImg = new Image();
-      this.floorImg.src = '/floor-petals.png';
+      // 바닥 꽃잎 — 로드 후 1/100 크기 타일로 미리 렌더링 (매 프레임 반복 안 하도록)
+      this.floorPrerendered = null;
+      const rawFloor = new Image();
+      rawFloor.onload = () => {
+        const iw = rawFloor.naturalWidth, ih = rawFloor.naturalHeight;
+        const cw = this.canvas.width, ch = this.canvas.height;
+        const tileW = Math.max(Math.round(cw / 100), 6);
+        const tileH = Math.max(Math.round(ih * tileW / iw), 3);
+        const floorDisplayH = Math.round(ch * 0.16);
+        const rows = Math.ceil(floorDisplayH / tileH) + 1;
+        const fc = document.createElement('canvas');
+        fc.width = cw;
+        fc.height = rows * tileH;
+        const fctx = fc.getContext('2d');
+        for (let row = 0; row < rows; row++) {
+          for (let x = 0; x < cw; x += tileW) {
+            fctx.drawImage(rawFloor, x, row * tileH, tileW, tileH);
+          }
+        }
+        this.floorPrerendered = fc;
+      };
+      rawFloor.src = '/floor-petals.png';
 
-      // 흩날리는 꽃잎 이미지 (배경 제거된 단일 꽃 이미지)
       this.petalImg = new Image();
       this.petalImg.src = '/falling-petals.png';
 
@@ -1382,28 +1400,20 @@
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // 바닥 꽃잎 — 전체 너비로 스케일 후 상단 페이드 블렌딩
-      const floorH = h * 0.32;
+      // 바닥 꽃잎 — 클립 없이 그려서 선 제거, 상단 페이드
+      const floorH = h * 0.16;
       const floorY = h - floorH;
-      if (this.floorImg && this.floorImg.complete && this.floorImg.naturalWidth > 0) {
-        const iw = this.floorImg.naturalWidth, ih = this.floorImg.naturalHeight;
-        const scale = w / iw;
-        const drawW = w, drawH = ih * scale;
-        const drawY = h - drawH;
+      if (this.floorPrerendered) {
         ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, floorY, w, floorH);
-        ctx.clip();
         ctx.globalAlpha = 1;
-        ctx.drawImage(this.floorImg, 0, drawY, drawW, drawH);
-        // 상단 자연스럽게 페이드아웃
-        const fadeH = floorH * 0.5;
+        ctx.drawImage(this.floorPrerendered, 0, h - this.floorPrerendered.height);
+        const fadeH = floorH * 0.6;
         const grad = ctx.createLinearGradient(0, floorY, 0, floorY + fadeH);
         grad.addColorStop(0, 'rgba(0,0,0,1)');
         grad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.globalCompositeOperation = 'destination-out';
         ctx.fillStyle = grad;
-        ctx.fillRect(0, floorY, w, fadeH);
+        ctx.fillRect(0, 0, w, floorY + fadeH);
         ctx.restore();
       }
 
