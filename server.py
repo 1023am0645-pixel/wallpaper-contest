@@ -13,7 +13,7 @@ import email.parser
 import email.policy
 import io
 
-PORT = 3000
+PORT = int(os.environ.get("PORT", 3000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "public", "uploads")
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "public", "docs")
