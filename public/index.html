@@ -487,7 +487,7 @@
 
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
     .empty-state .icon { font-size: 3.5rem; margin-bottom: 16px; }
-    .empty-state .char-img { width: 160px; height: 160px; object-fit: contain; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto; }
+    .empty-state .char-img { width: 230px; height: 230px; object-fit: contain; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto; }
     .empty-state p { font-size: 0.98rem; }
 
     /* ── 결과 ── */
@@ -1104,7 +1104,7 @@
     </div>
     <div class="gallery-grid" id="galleryGrid">
       <div class="empty-state" style="grid-column:1/-1">
-        <img src="/강이.png" alt="강이" class="char-img" onerror="this.style.display='none'">
+        <img src="/강이.png" alt="강이" class="char-img" crossorigin="anonymous" onload="removeBg(this)" onerror="this.style.display='none'">
         <p>아직 업로드된 작품이 없습니다</p>
       </div>
     </div>
@@ -1368,73 +1368,75 @@
     _initBlossom() {
       const w = this.canvas.width, h = this.canvas.height;
 
-      // 이미지 로드
-      this.floorImg = new Image();
-      this.floorImg.src = '/floor-petals.png';
-      this.petalImg = new Image();
-      this.petalImg.src = '/falling-petals.png';
+      // 바닥 꽃잎 — 이미지 로드 후 카드 테두리/글씨 제거해 순수 꽃잎 텍스처만 추출
+      this.floorCanvas = null;
+      const rawFloor = new Image();
+      rawFloor.crossOrigin = 'anonymous';
+      rawFloor.onload = () => {
+        const iw = rawFloor.naturalWidth, ih = rawFloor.naturalHeight;
+        const cL = Math.round(iw * 0.012), cT = Math.round(ih * 0.025);
+        const cR = Math.round(iw * 0.012), cB = Math.round(ih * 0.165);
+        const cw = iw - cL - cR, ch = ih - cT - cB;
+        const fc = document.createElement('canvas');
+        fc.width = cw; fc.height = ch;
+        fc.getContext('2d').drawImage(rawFloor, cL, cT, cw, ch, 0, 0, cw, ch);
+        this.floorCanvas = fc;
+      };
+      rawFloor.src = '/floor-petals.png';
+
+      // 흩날리는 꽃잎 — 그리드 이미지 로드 후 카드 테두리/배경 제거
+      this.petalCanvas = null;
+      const rawPetal = new Image();
+      rawPetal.crossOrigin = 'anonymous';
+      rawPetal.onload = () => {
+        const iw = rawPetal.naturalWidth, ih = rawPetal.naturalHeight;
+        const cL = Math.round(iw * 0.015), cT = Math.round(ih * 0.022);
+        const cR = Math.round(iw * 0.015), cB = Math.round(ih * 0.125);
+        const cw = iw - cL - cR, ch = ih - cT - cB;
+        const pc = document.createElement('canvas');
+        pc.width = cw; pc.height = ch;
+        const pctx = pc.getContext('2d');
+        pctx.drawImage(rawPetal, cL, cT, cw, ch, 0, 0, cw, ch);
+        // 배경색(보라/라벤더) 제거
+        const idata = pctx.getImageData(0, 0, cw, ch);
+        const px = idata.data;
+        const bgR = px[0], bgG = px[1], bgB = px[2];
+        const tol = 38;
+        for (let i = 0; i < px.length; i += 4) {
+          const d = Math.sqrt((px[i]-bgR)**2+(px[i+1]-bgG)**2+(px[i+2]-bgB)**2);
+          if (d < tol) px[i+3] = 0;
+          else if (d < tol*2) px[i+3] = Math.round(255*(d-tol)/tol);
+        }
+        pctx.putImageData(idata, 0, 0);
+        this.petalCanvas = pc;
+      };
+      rawPetal.src = '/falling-petals.png';
 
       this.particles = Array.from({length: 22}, () => this._newBlossomParticle(true));
-
-      // 바닥 꽃잎 캔버스 폴백용
-      this.floorPetals = Array.from({length: 200}, () => ({
-        x: Math.random() * w * 1.2 - w * 0.1,
-        y: h * 0.73 + Math.random() * h * 0.29,
-        size: Math.random() * 16 + 18,
-        angle: Math.random() * Math.PI * 2,
-        swayOff: Math.random() * Math.PI * 2,
-        swayAmp: Math.random() * 0.015 + 0.004,
-        swaySpeed: Math.random() * 0.2 + 0.08,
-        cv: Math.floor(Math.random() * 4),
-        alpha: Math.random() * 0.25 + 0.7,
-        depth: Math.random()
-      }));
       this._animBlossom();
     },
 
     _animBlossom() {
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
-      const t = Date.now() / 1000;
       ctx.clearRect(0, 0, w, h);
 
-      // 바닥 꽃잎 — 이미지 우선, 없으면 캔버스 폴백
-      const floorH = h * 0.28;
+      // 바닥 꽃잎 — 크롭된 이미지 타일링
+      const floorH = h * 0.30;
       const floorY = h - floorH;
-      if (this.floorImg && this.floorImg.complete && this.floorImg.naturalWidth > 0) {
-        const aspect = this.floorImg.naturalWidth / this.floorImg.naturalHeight;
+      if (this.floorCanvas) {
+        const aspect = this.floorCanvas.width / this.floorCanvas.height;
         const imgW = floorH * aspect;
         ctx.globalAlpha = 1;
         for (let x = 0; x < w + imgW; x += imgW) {
-          ctx.drawImage(this.floorImg, x, floorY, imgW, floorH);
+          ctx.drawImage(this.floorCanvas, x, floorY, imgW, floorH);
         }
-      } else {
-        const sortedFloor = [...this.floorPetals].sort((a, b) => a.depth - b.depth);
-        sortedFloor.forEach(fp => {
-          const sway = Math.sin(t * fp.swaySpeed + fp.swayOff) * fp.swayAmp;
-          ctx.save();
-          ctx.translate(fp.x, fp.y);
-          ctx.rotate(fp.angle + sway);
-          ctx.scale(1, 0.62);
-          ctx.globalAlpha = fp.alpha;
-          const l = fp.size, lw = fp.size * 0.6;
-          const g = ctx.createRadialGradient(0, -l*0.2, 0, 0, -l*0.3, l*1.05);
-          g.addColorStop(0, '#fff5f8');
-          g.addColorStop(0.25, fp.cv < 2 ? '#ffd8e8' : '#ffc8e0');
-          g.addColorStop(0.65, fp.cv < 2 ? '#f8a8c8' : '#f090b8');
-          g.addColorStop(1, fp.cv < 2 ? '#e880a8' : '#d86898');
-          ctx.beginPath();
-          this._petalShape(ctx, l, lw);
-          ctx.fillStyle = g;
-          ctx.fill();
-          ctx.restore();
-        });
       }
 
-      // 흩날리는 꽃잎 — 이미지 우선, 없으면 캔버스 폴백
-      const useImg = this.petalImg && this.petalImg.complete && this.petalImg.naturalWidth > 0;
+      // 흩날리는 꽃잎
+      const usePetal = !!this.petalCanvas;
       const cols = 4, rows = 2;
-      const cellW = useImg ? this.petalImg.naturalWidth / cols : 0;
-      const cellH = useImg ? this.petalImg.naturalHeight / rows : 0;
+      const cellW = usePetal ? this.petalCanvas.width / cols : 0;
+      const cellH = usePetal ? this.petalCanvas.height / rows : 0;
 
       this.particles.forEach((p, i) => {
         p.swing += p.swingS;
@@ -1449,16 +1451,16 @@
 
         const tiltScale = 0.6 + Math.abs(Math.cos(p.tiltY)) * 0.4;
 
-        if (useImg) {
+        if (usePetal) {
           const gx = p.cv % cols;
           const gy = Math.floor(p.cv / cols) % rows;
-          const drawSize = p.size * 3.2;
+          const drawSize = p.size * 1.6;
           ctx.save();
           ctx.translate(p.x, p.y);
           ctx.rotate(p.angle);
           ctx.scale(1, tiltScale);
           ctx.globalAlpha = p.alpha;
-          ctx.drawImage(this.petalImg,
+          ctx.drawImage(this.petalCanvas,
             gx * cellW, gy * cellH, cellW, cellH,
             -drawSize / 2, -drawSize / 2, drawSize, drawSize
           );
@@ -1759,6 +1761,35 @@
     setInterval(loadVotingStatus, 10000);
   });
 
+  // ── 캐릭터 이미지 배경 제거 ──
+  function removeBg(imgEl, tol) {
+    if (imgEl.dataset.bgDone) return;
+    imgEl.dataset.bgDone = '1';
+    tol = tol || 42;
+    try {
+      const iw = imgEl.naturalWidth, ih = imgEl.naturalHeight;
+      if (!iw || !ih) return;
+      const c = document.createElement('canvas');
+      c.width = iw; c.height = ih;
+      const x = c.getContext('2d');
+      x.drawImage(imgEl, 0, 0);
+      const d = x.getImageData(0, 0, iw, ih);
+      const p = d.data;
+      // 네 모서리 샘플로 배경색 추정
+      const idx = [0, (iw-1)*4, (ih-1)*iw*4, ((ih-1)*iw+(iw-1))*4];
+      let br=0,bg=0,bb=0;
+      idx.forEach(i => { br+=p[i]; bg+=p[i+1]; bb+=p[i+2]; });
+      br/=4; bg/=4; bb/=4;
+      for (let i=0; i<p.length; i+=4) {
+        const dist=Math.sqrt((p[i]-br)**2+(p[i+1]-bg)**2+(p[i+2]-bb)**2);
+        if (dist<tol) p[i+3]=0;
+        else if (dist<tol*2) p[i+3]=Math.round(255*(dist-tol)/tol);
+      }
+      x.putImageData(d,0,0);
+      imgEl.src=c.toDataURL('image/png');
+    } catch(e){}
+  }
+
   // ── 투표 상태 ──
   async function loadVotingStatus() {
     try {
@@ -1825,7 +1856,7 @@
   function renderGallery() {
     const grid = document.getElementById('galleryGrid');
     if (!works.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><img src="/강이.png" alt="강이" class="char-img" onerror="this.style.display='none'"><p>아직 업로드된 작품이 없습니다</p></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><img src="/강이.png" alt="강이" class="char-img" crossorigin="anonymous" onload="removeBg(this)" onerror="this.style.display='none'"><p>아직 업로드된 작품이 없습니다</p></div>`;
       lucide.createIcons();
       return;
     }
