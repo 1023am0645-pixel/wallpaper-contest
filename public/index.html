@@ -1366,24 +1366,20 @@
 
     _initBlossom() {
       const w = this.canvas.width, h = this.canvas.height;
-      this.particles = Array.from({length: 45}, () => this._newBlossomParticle(true));
-      // 바닥 꽃잎 — 살짝 깔린 정도
-      this.floorPetals = Array.from({length: 90}, (_, i) => {
-        const layer = Math.floor(i / 45);
-        const yBase = h * (0.86 + layer * 0.055);
-        return {
-          x: Math.random() * w * 1.15 - w * 0.075,
-          y: yBase + Math.random() * h * 0.06,
-          size: Math.random() * (8 + layer * 2) + (5 + layer * 1),
-          angle: Math.random() * Math.PI * 2,
-          swayOff: Math.random() * Math.PI * 2,
-          swayAmp: Math.random() * 0.04 + 0.01,
-          swaySpeed: Math.random() * 0.4 + 0.2,
-          cv: Math.floor(Math.random() * 4),
-          alpha: Math.random() * 0.2 + (0.5 + layer * 0.1),
-          depth: layer / 2 + Math.random() * 0.4
-        };
-      });
+      this.particles = Array.from({length: 40}, () => this._newBlossomParticle(true));
+      // 바닥 꽃잎 — 맨 아래 살짝만
+      this.floorPetals = Array.from({length: 32}, (_, i) => ({
+        x: Math.random() * w * 1.1 - w * 0.05,
+        y: h * 0.91 + Math.random() * h * 0.08,
+        size: Math.random() * 7 + 5,
+        angle: Math.random() * Math.PI * 2,
+        swayOff: Math.random() * Math.PI * 2,
+        swayAmp: Math.random() * 0.03 + 0.01,
+        swaySpeed: Math.random() * 0.3 + 0.15,
+        cv: Math.floor(Math.random() * 4),
+        alpha: Math.random() * 0.25 + 0.5,
+        depth: Math.random()
+      }));
       this._animBlossom();
     },
 
@@ -1439,101 +1435,77 @@
       this.animId = requestAnimationFrame(() => this._animBlossom());
     },
 
-    // 3D 벚꽃 낱장 꽃잎
+    // 5갈래 벚꽃 송이
     _draw3DPetal(ctx, x, y, size, angle, scaleX, alpha, cv) {
-      // 색상 세트: 앞면(밝은 핑크) / 뒷면(살짝 어두운 핑크)
       const isFront = scaleX >= 0;
       const absScale = Math.abs(scaleX);
-
-      // 앞면/뒷면에 따라 색상 다르게
-      const frontColors = [
-        ['#fce4ec', '#f48fb1'],
-        ['#fdd8e8', '#f06292'],
-        ['#fce8f0', '#ec92b8'],
-        ['#fdeef5', '#f8a8cc'],
-      ];
-      const backColors = [
-        ['#f48fb1', '#e06090'],
-        ['#f06292', '#c94f7a'],
-        ['#ec92b8', '#d4709a'],
-        ['#f8a8cc', '#e888b0'],
-      ];
-      const [c0, c1] = isFront ? frontColors[cv] : backColors[cv];
+      const r = size;
 
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(angle);
-      // scaleX로 좌우 압축 → 3D 회전 느낌
       ctx.scale(scaleX, 1);
-      ctx.globalAlpha = alpha * (0.6 + absScale * 0.4); // 측면일수록 살짝 투명
+      ctx.globalAlpha = alpha * (0.55 + absScale * 0.45);
 
-      const l = size;
-      const w2 = size * 0.52;
+      const petalColors = [
+        ['#fff0f5','#ffb3cc','#f472b6'],
+        ['#fce7f3','#fda4c8','#ec4899'],
+        ['#fdf2f8','#f9a8d4','#f06292'],
+        ['#fff5f8','#ffbdd8','#fb7eb5'],
+      ];
+      const [ch, cm, cd] = petalColors[cv];
 
-      // 그림자(깊이감)
-      if (isFront && absScale > 0.3) {
+      // 꽃잎 5개 그리기
+      for (let i = 0; i < 5; i++) {
         ctx.save();
-        ctx.translate(l * 0.06, l * 0.08);
-        ctx.globalAlpha = alpha * 0.12 * absScale;
+        ctx.rotate((i / 5) * Math.PI * 2);
+
+        // 꽃잎 그라디언트
+        const pg = ctx.createRadialGradient(0, -r*0.28, r*0.04, 0, -r*0.5, r);
+        pg.addColorStop(0, isFront ? '#ffffff' : ch);
+        pg.addColorStop(0.3, isFront ? ch : cm);
+        pg.addColorStop(0.7, isFront ? cm : cd);
+        pg.addColorStop(1,   isFront ? cd : '#c0487a');
+
         ctx.beginPath();
-        this._petalShape(ctx, l, w2);
-        ctx.fillStyle = '#c06080';
+        this._petalShape(ctx, r, r * 0.48);
+        ctx.fillStyle = pg;
         ctx.fill();
+
+        // 앞면 테두리
+        if (isFront && absScale > 0.3) {
+          ctx.beginPath();
+          this._petalShape(ctx, r, r * 0.48);
+          ctx.strokeStyle = `rgba(220,120,170,${0.18 * absScale})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+
+        // 중심맥
+        if (isFront && absScale > 0.4) {
+          ctx.globalAlpha = alpha * absScale * 0.22;
+          ctx.strokeStyle = '#d4608a';
+          ctx.lineWidth = 0.5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(0, r * 0.12);
+          ctx.quadraticCurveTo(0, -r * 0.4, 0, -r * 0.82);
+          ctx.stroke();
+        }
+
         ctx.restore();
       }
 
-      // 꽃잎 본체 — 라디얼 그라디언트로 입체감
-      const rg = ctx.createRadialGradient(-w2*0.2, -l*0.3, l*0.05, 0, -l*0.4, l*0.95);
-      rg.addColorStop(0,   isFront ? 'rgba(255,255,255,0.92)' : 'rgba(255,220,235,0.85)');
-      rg.addColorStop(0.35, c0);
-      rg.addColorStop(0.75, c1);
-      rg.addColorStop(1,   isFront ? '#f0a0c0' : '#d07898');
-
+      // 꽃 중심 노란 동그라미
+      const cg = ctx.createRadialGradient(0,0,0, 0,0, r*0.22);
+      cg.addColorStop(0, '#fffde7');
+      cg.addColorStop(0.6, '#fdd835');
+      cg.addColorStop(1, '#f9a825');
+      ctx.globalAlpha = alpha * (0.8 + absScale * 0.2);
       ctx.beginPath();
-      this._petalShape(ctx, l, w2);
-      ctx.fillStyle = rg;
+      ctx.arc(0, 0, r * 0.21, 0, Math.PI * 2);
+      ctx.fillStyle = cg;
       ctx.fill();
-
-      // 꽃잎 테두리 (앞면만)
-      if (isFront) {
-        ctx.beginPath();
-        this._petalShape(ctx, l, w2);
-        ctx.strokeStyle = `rgba(230,150,185,${0.15 * absScale})`;
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-      }
-
-      // 중심선 결 (앞면, 정면에 가까울수록 선명)
-      if (isFront && absScale > 0.25) {
-        ctx.globalAlpha = alpha * absScale * 0.28;
-        ctx.strokeStyle = '#e888b0';
-        ctx.lineWidth = 0.7;
-        ctx.lineCap = 'round';
-        // 중앙 주맥
-        ctx.beginPath();
-        ctx.moveTo(0, l * 0.18);
-        ctx.bezierCurveTo(0, -l*0.1, 0, -l*0.55, 0, -l*0.88);
-        ctx.stroke();
-        // 좌우 측맥
-        for (const side of [-1, 1]) {
-          ctx.beginPath();
-          ctx.moveTo(0, -l*0.18);
-          ctx.quadraticCurveTo(side * w2 * 0.35, -l*0.5, side * w2 * 0.55, -l*0.68);
-          ctx.stroke();
-        }
-      }
-
-      // 하이라이트 (앞면 정면)
-      if (isFront && absScale > 0.5) {
-        const hg = ctx.createRadialGradient(-w2*0.22, -l*0.38, 0, -w2*0.22, -l*0.38, l*0.32);
-        hg.addColorStop(0, `rgba(255,255,255,${0.55 * absScale})`);
-        hg.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.globalAlpha = alpha * absScale * 0.8;
-        ctx.beginPath();
-        ctx.ellipse(-w2*0.22, -l*0.38, l*0.22, l*0.28, -0.4, 0, Math.PI*2);
-        ctx.fillStyle = hg;
-        ctx.fill();
-      }
 
       ctx.restore();
     },
