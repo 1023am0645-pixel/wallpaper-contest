@@ -254,6 +254,7 @@ app.delete('/api/admin/docs/:filename', (req, res) => {
 app.get('/강이.png', (req, res) => res.sendFile(path.resolve('./강이.png')));
 app.get('/cursor.png', (req, res) => res.sendFile(path.resolve('./강이.png')));
 app.get('/건강균덩.png', (req, res) => res.sendFile(path.resolve('./건강균덩.png')));
+app.get('/character.png', (_req, res) => res.sendFile(path.resolve('./건강균덩.png')));
 
 // 투표 상태 조회
 app.get('/api/status', (req, res) => {

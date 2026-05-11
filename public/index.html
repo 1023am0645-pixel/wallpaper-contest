@@ -485,8 +485,9 @@
     .vote-btn.voted { border-color: #ef4444; background: rgba(239,68,68,0.08); }
     .vote-btn.voted svg { fill: #ef4444; stroke: #ef4444; }
 
-    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
     .empty-state .icon { font-size: 3.5rem; margin-bottom: 16px; }
+    .empty-state .char-img { width: 160px; height: 160px; object-fit: contain; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto; }
     .empty-state p { font-size: 0.98rem; }
 
     /* ── 결과 ── */
@@ -1103,7 +1104,7 @@
     </div>
     <div class="gallery-grid" id="galleryGrid">
       <div class="empty-state" style="grid-column:1/-1">
-        <div class="icon">🎨</div>
+        <img src="/character.png" alt="건이" class="char-img" onerror="this.style.display='none'">
         <p>아직 업로드된 작품이 없습니다</p>
       </div>
     </div>
@@ -1346,38 +1347,38 @@
        ════════════════════════════ */
     _newBlossomParticle(scattered) {
       const w = this.canvas.width, h = this.canvas.height;
-      const size = Math.random() * 7 + 5;
+      const size = Math.random() * 14 + 18; // 18~32px — 꽃송이 크게
       return {
         x: Math.random() * (w + 80) - 40,
-        y: scattered ? Math.random() * h : -20,
+        y: scattered ? Math.random() * h : -40,
         size,
-        vy: Math.random() * 0.4 + 0.1,
-        vx: Math.random() * 0.3 - 0.15,
+        vy: Math.random() * 0.35 + 0.08,
+        vx: Math.random() * 0.4 - 0.2,
         angle: Math.random() * Math.PI * 2,
-        aSpeed: (Math.random() - 0.5) * 0.02,
+        aSpeed: (Math.random() - 0.5) * 0.012,
         swing: Math.random() * Math.PI * 2,
-        swingS: Math.random() * 0.014 + 0.004,
-        flipAngle: Math.random() * Math.PI * 2,
-        flipSpeed: Math.random() * 0.025 + 0.008,
-        alpha: Math.random() * 0.35 + 0.45,
-        cv: Math.floor(Math.random() * 4)   // 색상 변형 0~3
+        swingS: Math.random() * 0.01 + 0.003,
+        tiltY: Math.random() * Math.PI * 2,  // 상하 기울기 (3D 원근)
+        tiltSpeed: Math.random() * 0.018 + 0.006,
+        alpha: Math.random() * 0.25 + 0.7,
+        cv: Math.floor(Math.random() * 4)
       };
     },
 
     _initBlossom() {
       const w = this.canvas.width, h = this.canvas.height;
-      this.particles = Array.from({length: 40}, () => this._newBlossomParticle(true));
-      // 바닥 꽃잎 — 맨 아래 살짝만
-      this.floorPetals = Array.from({length: 32}, (_, i) => ({
-        x: Math.random() * w * 1.1 - w * 0.05,
-        y: h * 0.91 + Math.random() * h * 0.08,
-        size: Math.random() * 7 + 5,
+      this.particles = Array.from({length: 25}, () => this._newBlossomParticle(true));
+      // 바닥 꽃잎 — 질감 패턴처럼 낱장 꽃잎들
+      this.floorPetals = Array.from({length: 70}, () => ({
+        x: Math.random() * w * 1.15 - w * 0.07,
+        y: h * 0.88 + Math.random() * h * 0.14,
+        size: Math.random() * 11 + 9,  // 9~20px
         angle: Math.random() * Math.PI * 2,
         swayOff: Math.random() * Math.PI * 2,
-        swayAmp: Math.random() * 0.03 + 0.01,
-        swaySpeed: Math.random() * 0.3 + 0.15,
+        swayAmp: Math.random() * 0.02 + 0.005,
+        swaySpeed: Math.random() * 0.25 + 0.1,
         cv: Math.floor(Math.random() * 4),
-        alpha: Math.random() * 0.25 + 0.5,
+        alpha: Math.random() * 0.3 + 0.55,
         depth: Math.random()
       }));
       this._animBlossom();
@@ -1388,136 +1389,149 @@
       const t = Date.now() / 1000;
       ctx.clearRect(0, 0, w, h);
 
-      // 바닥 꽃잎 더미 (깊이 순으로)
+      // 바닥 꽃잎 — 질감 패턴 스타일 (낱장 꽃잎, 깊이 순)
       const sortedFloor = [...this.floorPetals].sort((a, b) => a.depth - b.depth);
       sortedFloor.forEach(fp => {
         const sway = Math.sin(t * fp.swaySpeed + fp.swayOff) * fp.swayAmp;
-        // 바닥 꽃잎은 납작하게 (scaleY 0.35 — 바닥에 누운 느낌)
         ctx.save();
         ctx.translate(fp.x, fp.y);
         ctx.rotate(fp.angle + sway);
-        ctx.scale(1, 0.35);
+        ctx.scale(1, 0.45); // 바닥에 눕혀진 느낌
         ctx.globalAlpha = fp.alpha;
-        const l = fp.size, lw = fp.size * 0.52;
-        const g = ctx.createRadialGradient(-lw*0.1, -l*0.3, 0, 0, -l*0.4, l*0.9);
-        g.addColorStop(0, '#fff5f9');
-        g.addColorStop(0.4, fp.cv < 2 ? '#ffd6e8' : '#ffbcd5');
-        g.addColorStop(1, fp.cv < 2 ? '#ffaacb' : '#f990bc');
+        const l = fp.size, lw = fp.size * 0.58;
+        const g = ctx.createRadialGradient(0, -l*0.25, 0, 0, -l*0.35, l*1.1);
+        g.addColorStop(0, '#fff0f7');
+        g.addColorStop(0.35, fp.cv < 2 ? '#ffc8de' : '#ffb0cf');
+        g.addColorStop(0.75, fp.cv < 2 ? '#f898c0' : '#f07ab0');
+        g.addColorStop(1, fp.cv < 2 ? '#e8709c' : '#d4608a');
         ctx.beginPath();
         this._petalShape(ctx, l, lw);
-        ctx.fillStyle = g; ctx.fill();
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200,80,130,0.12)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
         ctx.restore();
       });
 
-      // 바닥 분홍 안개 — 은은하게
-      const fog = ctx.createLinearGradient(0, h * 0.82, 0, h);
-      fog.addColorStop(0, 'rgba(255,220,235,0)');
-      fog.addColorStop(0.5, 'rgba(255,200,220,0.15)');
-      fog.addColorStop(1, 'rgba(255,185,210,0.28)');
-      ctx.fillStyle = fog; ctx.fillRect(0, h * 0.82, w, h * 0.18);
+      // 바닥 은은한 분홍 안개
+      const fog = ctx.createLinearGradient(0, h * 0.84, 0, h);
+      fog.addColorStop(0, 'rgba(255,200,225,0)');
+      fog.addColorStop(0.6, 'rgba(255,185,215,0.12)');
+      fog.addColorStop(1, 'rgba(255,170,205,0.22)');
+      ctx.fillStyle = fog; ctx.fillRect(0, h * 0.84, w, h * 0.16);
 
       this.particles.forEach((p, i) => {
         p.swing += p.swingS;
-        p.flipAngle += p.flipSpeed;
-        p.x += Math.sin(p.swing) * 0.7 + p.vx;
+        p.tiltY += p.tiltSpeed;
+        p.x += Math.sin(p.swing) * 0.8 + p.vx;
         p.y += p.vy;
         p.angle += p.aSpeed;
 
-        if (p.y > h + 30 || p.x < -50 || p.x > w + 50) {
+        if (p.y > h + 50 || p.x < -60 || p.x > w + 60) {
           this.particles[i] = this._newBlossomParticle(false); return;
         }
 
-        // scaleX: cos 값으로 -1~1 → 3D 뒤집기
-        const scaleX = Math.cos(p.flipAngle);
-        this._draw3DPetal(ctx, p.x, p.y, p.size, p.angle, scaleX, p.alpha, p.cv);
+        // 상하 tilt으로 원근감 (꽃이 앞뒤로 기우는 느낌)
+        const tiltScale = 0.45 + Math.abs(Math.cos(p.tiltY)) * 0.55; // 0.45~1.0
+        this._draw3DPetal(ctx, p.x, p.y, p.size, p.angle, tiltScale, p.alpha, p.cv);
       });
 
       this.animId = requestAnimationFrame(() => this._animBlossom());
     },
 
-    // 5갈래 벚꽃 송이
-    _draw3DPetal(ctx, x, y, size, angle, scaleX, alpha, cv) {
-      const isFront = scaleX >= 0;
-      const absScale = Math.abs(scaleX);
+    // 5갈래 벚꽃 송이 — 꽃잎 그룹 스타일
+    _draw3DPetal(ctx, x, y, size, angle, tiltScale, alpha, cv) {
       const r = size;
 
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(angle);
-      ctx.scale(scaleX, 1);
-      ctx.globalAlpha = alpha * (0.55 + absScale * 0.45);
+      ctx.scale(1, tiltScale); // 상하 원근 (언제나 꽃모양 유지)
+      ctx.globalAlpha = alpha * (0.6 + tiltScale * 0.4);
 
       const petalColors = [
-        ['#fff0f5','#ffb3cc','#f472b6'],
-        ['#fce7f3','#fda4c8','#ec4899'],
-        ['#fdf2f8','#f9a8d4','#f06292'],
-        ['#fff5f8','#ffbdd8','#fb7eb5'],
+        ['#ffe0ed', '#ffaacb', '#f06090'],
+        ['#fce4f0', '#f9a4cc', '#e0608a'],
+        ['#fff0f5', '#ffc0d8', '#f07898'],
+        ['#fde8f3', '#f8b4d0', '#e87aac'],
       ];
-      const [ch, cm, cd] = petalColors[cv];
+      const [ch, cm, cd] = petalColors[cv % 4];
 
-      // 꽃잎 5개 그리기
+      // 꽃잎 5개
       for (let i = 0; i < 5; i++) {
         ctx.save();
         ctx.rotate((i / 5) * Math.PI * 2);
 
-        // 꽃잎 그라디언트
-        const pg = ctx.createRadialGradient(0, -r*0.28, r*0.04, 0, -r*0.5, r);
-        pg.addColorStop(0, isFront ? '#ffffff' : ch);
-        pg.addColorStop(0.3, isFront ? ch : cm);
-        pg.addColorStop(0.7, isFront ? cm : cd);
-        pg.addColorStop(1,   isFront ? cd : '#c0487a');
+        const pg = ctx.createRadialGradient(0, -r*0.22, r*0.02, 0, -r*0.52, r*1.05);
+        pg.addColorStop(0, '#ffffff');
+        pg.addColorStop(0.15, '#fff5f9');
+        pg.addColorStop(0.45, ch);
+        pg.addColorStop(0.78, cm);
+        pg.addColorStop(1, cd);
 
         ctx.beginPath();
-        this._petalShape(ctx, r, r * 0.48);
+        this._petalShape(ctx, r, r * 0.55);
         ctx.fillStyle = pg;
         ctx.fill();
 
-        // 앞면 테두리
-        if (isFront && absScale > 0.3) {
-          ctx.beginPath();
-          this._petalShape(ctx, r, r * 0.48);
-          ctx.strokeStyle = `rgba(220,120,170,${0.18 * absScale})`;
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-        }
+        // 테두리
+        ctx.beginPath();
+        this._petalShape(ctx, r, r * 0.55);
+        ctx.strokeStyle = `rgba(195,95,140,0.18)`;
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
 
         // 중심맥
-        if (isFront && absScale > 0.4) {
-          ctx.globalAlpha = alpha * absScale * 0.22;
-          ctx.strokeStyle = '#d4608a';
-          ctx.lineWidth = 0.5;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(0, r * 0.12);
-          ctx.quadraticCurveTo(0, -r * 0.4, 0, -r * 0.82);
-          ctx.stroke();
-        }
+        ctx.globalAlpha = alpha * 0.18;
+        ctx.strokeStyle = '#c05880';
+        ctx.lineWidth = 0.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, r * 0.1);
+        ctx.quadraticCurveTo(0, -r * 0.45, 0, -r * 0.8);
+        ctx.stroke();
 
         ctx.restore();
       }
 
-      // 꽃 중심 노란 동그라미
-      const cg = ctx.createRadialGradient(0,0,0, 0,0, r*0.22);
-      cg.addColorStop(0, '#fffde7');
-      cg.addColorStop(0.6, '#fdd835');
-      cg.addColorStop(1, '#f9a825');
-      ctx.globalAlpha = alpha * (0.8 + absScale * 0.2);
+      // 수술 — 노란 점들
+      ctx.globalAlpha = alpha * 0.9;
+      for (let i = 0; i < 10; i++) {
+        const sa = (i / 10) * Math.PI * 2;
+        const sr = r * 0.22;
+        ctx.beginPath();
+        ctx.arc(Math.cos(sa) * sr * 0.65, Math.sin(sa) * sr * 0.65, r * 0.045, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? '#ffd740' : '#ffecb3';
+        ctx.fill();
+      }
+
+      // 꽃 중심 핑크
+      const cg = ctx.createRadialGradient(0,0,0, 0,0, r*0.2);
+      cg.addColorStop(0, '#ffe0ef');
+      cg.addColorStop(0.5, '#f8a0c0');
+      cg.addColorStop(1, '#e87aa8');
       ctx.beginPath();
-      ctx.arc(0, 0, r * 0.21, 0, Math.PI * 2);
+      ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
       ctx.fillStyle = cg;
       ctx.fill();
 
       ctx.restore();
     },
 
-    // 벚꽃 꽃잎 윤곽선 — 둥글고 위에 살짝 오목한 모양
+    // 벚꽃 꽃잎 윤곽 — 끝에 하트 오목한 정통 벚꽃 모양
     _petalShape(ctx, l, w) {
-      const r = l * 0.82;
-      ctx.moveTo(0, r * 0.18);
-      ctx.bezierCurveTo(-w*0.75, r*0.1, -w*0.95, -r*0.35, -w*0.72, -r*0.72);
-      ctx.bezierCurveTo(-w*0.48, -r*0.98, -w*0.14, -r*0.88, 0, -r*0.78);
-      ctx.bezierCurveTo(w*0.14, -r*0.88, w*0.48, -r*0.98, w*0.72, -r*0.72);
-      ctx.bezierCurveTo(w*0.95, -r*0.35, w*0.75, r*0.1, 0, r*0.18);
+      const r = l * 0.88;
+      // 아래 중심에서 시작
+      ctx.moveTo(0, r * 0.2);
+      // 왼쪽 곡선
+      ctx.bezierCurveTo(-w * 0.85, r * 0.08, -w * 1.05, -r * 0.38, -w * 0.78, -r * 0.68);
+      // 왼쪽 상단 → 중앙 오목 (하트 노치)
+      ctx.bezierCurveTo(-w * 0.52, -r * 0.92, -w * 0.2, -r * 1.0, 0, -r * 0.85);
+      // 오른쪽 상단
+      ctx.bezierCurveTo(w * 0.2, -r * 1.0, w * 0.52, -r * 0.92, w * 0.78, -r * 0.68);
+      // 오른쪽 곡선
+      ctx.bezierCurveTo(w * 1.05, -r * 0.38, w * 0.85, r * 0.08, 0, r * 0.2);
       ctx.closePath();
     },
 
@@ -1816,7 +1830,7 @@
   function renderGallery() {
     const grid = document.getElementById('galleryGrid');
     if (!works.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎨</div><p>아직 업로드된 작품이 없습니다</p></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><img src="/character.png" alt="건이" class="char-img" onerror="this.style.display='none'"><p>아직 업로드된 작품이 없습니다</p></div>`;
       lucide.createIcons();
       return;
     }

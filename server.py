@@ -189,9 +189,23 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        # 캐릭터 이미지 (ASCII 경로)
-        if path == "/cursor.png":
+        # 캐릭터 이미지
+        if path in ("/cursor.png", "/%EA%B0%95%EC%9D%B4.png"):
             fpath = os.path.join(BASE_DIR, "강이.png")
+            if os.path.isfile(fpath):
+                with open(fpath, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", len(body))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(404); self.end_headers()
+            return
+
+        if path in ("/%EA%B1%B4%EA%B0%95%EA%B7%A0%EB%8D%A9.png", "/character.png"):
+            fpath = os.path.join(BASE_DIR, "건강균덩.png")
             if os.path.isfile(fpath):
                 with open(fpath, "rb") as f:
                     body = f.read()
