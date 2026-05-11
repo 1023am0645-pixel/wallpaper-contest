@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 웰페이퍼 공모전</title>
+  <title>건이강이 배경화면 제작 컨테스트</title>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     /* ── 테마 변수 ── */
@@ -55,23 +55,6 @@
       --shadow: rgba(219,39,119,0.08);
     }
 
-    /* 민트봄 테마 */
-    [data-theme="spring2"] {
-      --bg: #f0faf7;
-      --surface: #ffffff;
-      --card: #f5fffc;
-      --accent: #059669;
-      --accent2: #10b981;
-      --accent-end: #6ee7b7;
-      --text: #052e16;
-      --muted: #6b8f7d;
-      --success: #10b981;
-      --danger: #ef4444;
-      --border: rgba(5,150,105,0.18);
-      --header-bg: linear-gradient(135deg,#ecfdf5 0%,#d1fae5 50%,#f0fdf4 100%);
-      --shadow: rgba(5,150,105,0.08);
-    }
-
     /* ── 기본 리셋 ── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -89,15 +72,7 @@
     [data-theme="spring1"] .vote-badge {
       background: linear-gradient(135deg, #db2777, #f472b6);
     }
-    [data-theme="spring2"] .btn-primary,
-    [data-theme="spring2"] .btn-verify,
-    [data-theme="spring2"] .vote-badge {
-      background: linear-gradient(135deg, #059669, #34d399);
-    }
-    [data-theme="spring1"] .nav-btn.active,
-    [data-theme="spring1"] .theme-btn.active { background: #db2777 !important; }
-    [data-theme="spring2"] .nav-btn.active,
-    [data-theme="spring2"] .theme-btn.active { background: #059669 !important; }
+    [data-theme="spring1"] .theme-btn.active { background: #db2777 !important; color: white !important; }
 
     /* ── 헤더 ── */
     header {
@@ -249,8 +224,7 @@
       border-bottom-color: var(--accent2);
       background: rgba(124,58,237,0.07);
     }
-    [data-theme="spring1"] .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(219,39,119,0.07); }
-    [data-theme="spring2"] .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(5,150,105,0.07); }
+    [data-theme="spring1"] .nav-btn.active { color: #db2777 !important; border-bottom-color: #db2777; background: rgba(219,39,119,0.08); }
 
     /* ── 메인 ── */
     main {
@@ -967,8 +941,7 @@
       pointer-events: none;
       display: none;
     }
-    [data-theme="spring1"] #effectCanvas,
-    [data-theme="spring2"] #effectCanvas { display: block; }
+    [data-theme="spring1"] #effectCanvas { display: block; }
 
     main { position: relative; z-index: 1; }
 
@@ -1063,7 +1036,7 @@
   <div class="header-top">
     <div class="logo">
       <i data-lucide="sparkles"></i>
-      AI 웰페이퍼 공모전
+      건이강이 배경화면 제작 컨테스트
     </div>
     <div class="header-spacer"></div>
 
@@ -1077,9 +1050,6 @@
       </button>
       <button class="theme-btn" data-t="spring1" title="벚꽃" onclick="applyTheme('spring1')">
         <i data-lucide="flower-2"></i><span>벚꽃</span>
-      </button>
-      <button class="theme-btn" data-t="spring2" title="민트봄" onclick="applyTheme('spring2')">
-        <i data-lucide="sprout"></i><span>민트봄</span>
       </button>
     </div>
 
@@ -1231,7 +1201,7 @@
           <label style="display:flex;align-items:center;gap:5px;font-size:0.83rem;color:var(--muted);margin-bottom:6px">
             <i data-lucide="lock"></i>관리자 비밀번호
           </label>
-          <input type="password" class="pw-input" id="adminPw" placeholder="비밀번호 입력" />
+          <input type="password" class="pw-input" id="adminPw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')verifyAdmin()" />
         </div>
         <button class="btn-verify" onclick="verifyAdmin()">
           <i data-lucide="log-in"></i>관리자 인증
@@ -1338,10 +1308,8 @@
     start(theme) {
       this.stop();
       this.current = theme;
-      // 벚꽃은 콘텐츠 위에, 민트봄 씬은 콘텐츠 뒤에
-      this.canvas.style.zIndex = theme === 'spring1' ? '2' : '0';
+      this.canvas.style.zIndex = '2';
       if (theme === 'spring1') this._initBlossom();
-      else if (theme === 'spring2') this._initMint();
     },
 
     stop() {
@@ -1356,147 +1324,250 @@
        ════════════════════════════ */
     _newBlossomParticle(scattered) {
       const w = this.canvas.width, h = this.canvas.height;
-      const isFlower = Math.random() < 0.28; // 28% 는 전체 꽃
+      // 꽃잎 크기: 작고 다양하게
+      const size = Math.random() * 10 + 8;
+      // scaleX를 0~1 사이로 → 꽃잎이 뒤집히며 3D 회전처럼 보임
       return {
-        type: isFlower ? 'flower' : 'petal',
-        x: Math.random() * (w + 60) - 30,
-        y: scattered ? Math.random() * h : -(isFlower ? 30 : 18),
-        size: isFlower ? Math.random() * 13 + 11 : Math.random() * 9 + 5,
-        vy: isFlower ? Math.random() * 0.7 + 0.2 : Math.random() * 1.3 + 0.45,
-        vx: Math.random() * 0.4 - 0.2,
+        x: Math.random() * (w + 80) - 40,
+        y: scattered ? Math.random() * h : -20,
+        size,
+        vy: Math.random() * 0.55 + 0.2,   // 아주 천천히
+        vx: Math.random() * 0.3 - 0.15,
         angle: Math.random() * Math.PI * 2,
-        aSpeed: (Math.random() - 0.5) * (isFlower ? 0.012 : 0.048),
+        aSpeed: (Math.random() - 0.5) * 0.018,  // 부드럽게 회전
         swing: Math.random() * Math.PI * 2,
-        swingS: Math.random() * 0.02 + 0.007,
-        alpha: Math.random() * 0.4 + 0.38,
-        sparkle: 0, sparkleCd: Math.floor(Math.random() * 240 + 90),
-        cv: Math.random() // colour variant
+        swingS: Math.random() * 0.012 + 0.005,
+        // 3D 효과: scaleX가 -1~1 사이를 왕복 → 꽃잎이 뒤집히는 효과
+        flipAngle: Math.random() * Math.PI * 2,
+        flipSpeed: Math.random() * 0.025 + 0.008,
+        alpha: Math.random() * 0.35 + 0.45,
+        cv: Math.floor(Math.random() * 4)   // 색상 변형 0~3
       };
     },
 
     _initBlossom() {
-      this.particles = Array.from({length: 58}, () => this._newBlossomParticle(true));
+      const w = this.canvas.width, h = this.canvas.height;
+      this.particles = Array.from({length: 38}, () => this._newBlossomParticle(true));
+      // 바닥 쌓인 꽃잎 (고정)
+      this.floorPetals = Array.from({length: 70}, (_, i) => ({
+        x: (i / 70) * w * 1.1 - w * 0.05 + (Math.random() * 50 - 25),
+        y: h * 0.82 + Math.random() * h * 0.17,
+        size: Math.random() * 10 + 5,
+        angle: Math.random() * Math.PI * 2,
+        swayOff: Math.random() * Math.PI * 2,
+        swayAmp: Math.random() * 0.06 + 0.01,
+        swaySpeed: Math.random() * 0.6 + 0.3,
+        cv: Math.floor(Math.random() * 4),
+        alpha: Math.random() * 0.25 + 0.45,
+        depth: Math.random()
+      }));
       this._animBlossom();
     },
 
     _animBlossom() {
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const t = Date.now() / 1000;
       ctx.clearRect(0, 0, w, h);
+
+      // 바닥 꽃잎 더미 (깊이 순으로)
+      const sortedFloor = [...this.floorPetals].sort((a, b) => a.depth - b.depth);
+      sortedFloor.forEach(fp => {
+        const sway = Math.sin(t * fp.swaySpeed + fp.swayOff) * fp.swayAmp;
+        // 바닥 꽃잎은 납작하게 (scaleY 0.35 — 바닥에 누운 느낌)
+        ctx.save();
+        ctx.translate(fp.x, fp.y);
+        ctx.rotate(fp.angle + sway);
+        ctx.scale(1, 0.35);
+        ctx.globalAlpha = fp.alpha;
+        const l = fp.size, lw = fp.size * 0.52;
+        const g = ctx.createRadialGradient(-lw*0.1, -l*0.3, 0, 0, -l*0.4, l*0.9);
+        g.addColorStop(0, '#fff5f9');
+        g.addColorStop(0.4, fp.cv < 2 ? '#ffd6e8' : '#ffbcd5');
+        g.addColorStop(1, fp.cv < 2 ? '#ffaacb' : '#f990bc');
+        ctx.beginPath();
+        this._petalShape(ctx, l, lw);
+        ctx.fillStyle = g; ctx.fill();
+        ctx.restore();
+      });
+
+      // 바닥 전체에 분홍 안개 오버레이 (쌓인 느낌 강화)
+      const fog = ctx.createLinearGradient(0, h * 0.78, 0, h);
+      fog.addColorStop(0, 'rgba(255,220,235,0)');
+      fog.addColorStop(0.4, 'rgba(255,210,228,0.18)');
+      fog.addColorStop(1, 'rgba(255,195,218,0.30)');
+      ctx.fillStyle = fog; ctx.fillRect(0, h * 0.78, w, h * 0.22);
 
       this.particles.forEach((p, i) => {
         p.swing += p.swingS;
-        p.x += Math.sin(p.swing) * 0.9 + p.vx;
+        p.flipAngle += p.flipSpeed;
+        p.x += Math.sin(p.swing) * 0.7 + p.vx;
         p.y += p.vy;
         p.angle += p.aSpeed;
-        if (--p.sparkleCd <= 0) { p.sparkle = 1; p.sparkleCd = Math.floor(Math.random() * 260 + 90); }
-        if (p.sparkle > 0) p.sparkle -= 0.055;
 
-        if (p.y > h + 35 || p.x < -40 || p.x > w + 40) {
+        if (p.y > h + 30 || p.x < -50 || p.x > w + 50) {
           this.particles[i] = this._newBlossomParticle(false); return;
         }
 
-        const a = Math.min(p.alpha + p.sparkle * 0.32, 0.88);
-        if (p.type === 'flower') this._drawCherryFlower(ctx, p.x, p.y, p.size, p.angle, a, p.sparkle);
-        else this._drawCherryPetal(ctx, p.x, p.y, p.size, p.angle, a, p.cv, p.sparkle);
+        // scaleX: cos 값으로 -1~1 → 3D 뒤집기
+        const scaleX = Math.cos(p.flipAngle);
+        this._draw3DPetal(ctx, p.x, p.y, p.size, p.angle, scaleX, p.alpha, p.cv);
       });
 
       this.animId = requestAnimationFrame(() => this._animBlossom());
     },
 
-    // 5장 꽃잎 벚꽃 전체
-    _drawCherryFlower(ctx, x, y, r, angle, alpha, sparkle) {
+    // 3D 벚꽃 낱장 꽃잎
+    _draw3DPetal(ctx, x, y, size, angle, scaleX, alpha, cv) {
+      // 색상 세트: 앞면(밝은 핑크) / 뒷면(살짝 어두운 핑크)
+      const isFront = scaleX >= 0;
+      const absScale = Math.abs(scaleX);
+
+      // 앞면/뒷면에 따라 색상 다르게
+      const frontColors = [
+        ['#fff0f5', '#ffcce0'],
+        ['#ffe8f3', '#ffb8d4'],
+        ['#fdf0f7', '#f9c8df'],
+        ['#fff5f8', '#ffd6e8'],
+      ];
+      const backColors = [
+        ['#f7c8db', '#e8a0be'],
+        ['#f5bdd4', '#dd94b5'],
+        ['#f2c4d8', '#e09abb'],
+        ['#f8cedd', '#e8a8c4'],
+      ];
+      const [c0, c1] = isFront ? frontColors[cv] : backColors[cv];
+
       ctx.save();
-      ctx.translate(x, y); ctx.rotate(angle);
-      ctx.globalAlpha = alpha;
-      const l = r, pw = r * 0.54;
-      for (let i = 0; i < 5; i++) {
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      // scaleX로 좌우 압축 → 3D 회전 느낌
+      ctx.scale(scaleX, 1);
+      ctx.globalAlpha = alpha * (0.6 + absScale * 0.4); // 측면일수록 살짝 투명
+
+      const l = size;
+      const w2 = size * 0.52;
+
+      // 그림자(깊이감)
+      if (isFront && absScale > 0.3) {
         ctx.save();
-        ctx.rotate((i / 5) * Math.PI * 2);
-        const g = ctx.createLinearGradient(0, 0, 0, -l);
-        g.addColorStop(0, '#ffe4ef'); g.addColorStop(1, '#ffadd0');
+        ctx.translate(l * 0.06, l * 0.08);
+        ctx.globalAlpha = alpha * 0.12 * absScale;
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        // 끝부분 살짝 오목한 벚꽃 꽃잎 모양
-        ctx.bezierCurveTo(-pw*0.48, -l*0.28, -pw*0.58, -l*0.72, -pw*0.12, -l);
-        ctx.bezierCurveTo(-pw*0.04, -l*1.05, pw*0.04, -l*1.05, pw*0.12, -l);
-        ctx.bezierCurveTo(pw*0.58, -l*0.72, pw*0.48, -l*0.28, 0, 0);
-        ctx.closePath();
-        ctx.fillStyle = g; ctx.fill();
-        ctx.strokeStyle = 'rgba(255,140,185,0.2)'; ctx.lineWidth = 0.4; ctx.stroke();
+        this._petalShape(ctx, l, w2);
+        ctx.fillStyle = '#c06080';
+        ctx.fill();
         ctx.restore();
       }
-      // 중심부
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.16, 0, Math.PI * 2);
-      ctx.fillStyle = '#ff82b4'; ctx.fill();
-      // 수술 (꽃술)
-      for (let i = 0; i < 8; i++) {
-        ctx.save(); ctx.rotate((i / 8) * Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,130,170,0.85)'; ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.moveTo(0, -r * 0.13); ctx.lineTo(0, -r * 0.44); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, -r * 0.44, 1.4, 0, Math.PI * 2);
-        ctx.fillStyle = '#ff6090'; ctx.fill();
-        ctx.restore();
+
+      // 꽃잎 본체 — 라디얼 그라디언트로 입체감
+      const rg = ctx.createRadialGradient(-w2*0.2, -l*0.3, l*0.05, 0, -l*0.4, l*0.95);
+      rg.addColorStop(0,   isFront ? 'rgba(255,255,255,0.92)' : 'rgba(255,220,235,0.85)');
+      rg.addColorStop(0.35, c0);
+      rg.addColorStop(0.75, c1);
+      rg.addColorStop(1,   isFront ? '#f0a0c0' : '#d07898');
+
+      ctx.beginPath();
+      this._petalShape(ctx, l, w2);
+      ctx.fillStyle = rg;
+      ctx.fill();
+
+      // 꽃잎 테두리 (앞면만)
+      if (isFront) {
+        ctx.beginPath();
+        this._petalShape(ctx, l, w2);
+        ctx.strokeStyle = `rgba(230,150,185,${0.15 * absScale})`;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
       }
-      // 반짝임
-      if (sparkle > 0.12) {
-        ctx.globalAlpha = sparkle * 0.5;
-        ctx.beginPath(); ctx.arc(-r * 0.18, -r * 0.28, r * 0.22, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+
+      // 중심선 결 (앞면, 정면에 가까울수록 선명)
+      if (isFront && absScale > 0.25) {
+        ctx.globalAlpha = alpha * absScale * 0.28;
+        ctx.strokeStyle = '#e888b0';
+        ctx.lineWidth = 0.7;
+        ctx.lineCap = 'round';
+        // 중앙 주맥
+        ctx.beginPath();
+        ctx.moveTo(0, l * 0.18);
+        ctx.bezierCurveTo(0, -l*0.1, 0, -l*0.55, 0, -l*0.88);
+        ctx.stroke();
+        // 좌우 측맥
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(0, -l*0.18);
+          ctx.quadraticCurveTo(side * w2 * 0.35, -l*0.5, side * w2 * 0.55, -l*0.68);
+          ctx.stroke();
+        }
       }
+
+      // 하이라이트 (앞면 정면)
+      if (isFront && absScale > 0.5) {
+        const hg = ctx.createRadialGradient(-w2*0.22, -l*0.38, 0, -w2*0.22, -l*0.38, l*0.32);
+        hg.addColorStop(0, `rgba(255,255,255,${0.55 * absScale})`);
+        hg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.globalAlpha = alpha * absScale * 0.8;
+        ctx.beginPath();
+        ctx.ellipse(-w2*0.22, -l*0.38, l*0.22, l*0.28, -0.4, 0, Math.PI*2);
+        ctx.fillStyle = hg;
+        ctx.fill();
+      }
+
       ctx.restore();
     },
 
-    // 낱장 꽃잎
-    _drawCherryPetal(ctx, x, y, size, angle, alpha, cv, sparkle) {
-      ctx.save();
-      ctx.translate(x, y); ctx.rotate(angle);
-      ctx.globalAlpha = alpha;
-      const l = size, pw = size * 0.5;
-      const g = ctx.createLinearGradient(0, 0, 0, -l);
-      g.addColorStop(0, cv > 0.5 ? '#ffe8f0' : '#ffd6e5');
-      g.addColorStop(1, cv > 0.5 ? '#ffbad8' : '#ffaacb');
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(-pw*0.48, -l*0.28, -pw*0.58, -l*0.72, -pw*0.12, -l);
-      ctx.bezierCurveTo(-pw*0.04, -l*1.05, pw*0.04, -l*1.05, pw*0.12, -l);
-      ctx.bezierCurveTo(pw*0.58, -l*0.72, pw*0.48, -l*0.28, 0, 0);
+    // 벚꽃 꽃잎 윤곽선 (끝이 살짝 오목한 하트형)
+    _petalShape(ctx, l, w) {
+      ctx.moveTo(0, l * 0.2);
+      ctx.bezierCurveTo(-w*0.55, l*0.02, -w*0.7, -l*0.45, -w*0.18, -l*0.82);
+      ctx.bezierCurveTo(-w*0.06, -l*1.02, w*0.06, -l*1.02, w*0.18, -l*0.82);
+      ctx.bezierCurveTo(w*0.7, -l*0.45, w*0.55, l*0.02, 0, l*0.2);
       ctx.closePath();
-      ctx.fillStyle = g; ctx.fill();
-      // 꽃잎 결
-      ctx.strokeStyle = 'rgba(255,145,185,0.22)'; ctx.lineWidth = 0.55;
-      ctx.beginPath(); ctx.moveTo(0, l * 0.08); ctx.bezierCurveTo(0, -l*0.3, 0, -l*0.6, 0, -l*0.88); ctx.stroke();
-      if (sparkle > 0.12) {
-        ctx.globalAlpha = sparkle * 0.45;
-        ctx.beginPath(); ctx.arc(-pw*0.12, -l*0.28, pw * 0.22, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
-      }
-      ctx.restore();
     },
 
     /* ════════════════════════════
        민트봄 씬 — 나뭇가지+잎사귀 배경
        ════════════════════════════ */
+    /* ══════════════════════════════════════
+       민트봄: 3D 잎사귀 바닥에 쌓여 살랑거림
+       ══════════════════════════════════════ */
     _initMint() {
-      // 날아다니는 잎사귀 파티클
-      this.particles = Array.from({length: 14}, () => this._newWindLeaf(true));
+      const w = this.canvas.width, h = this.canvas.height;
+      // 바닥 잎사귀 (고정 위치, 살랑거림)
+      this.floorLeaves = Array.from({length: 55}, (_, i) => ({
+        x: (i / 55) * w * 1.1 - w * 0.05 + (Math.random() * 60 - 30),
+        y: h * 0.80 + Math.random() * h * 0.18,
+        size: Math.random() * 18 + 10,
+        baseAngle: Math.random() * Math.PI * 2,
+        swayAmp: Math.random() * 0.18 + 0.04,
+        swaySpeed: Math.random() * 0.8 + 0.4,
+        swayOff: Math.random() * Math.PI * 2,
+        flipOff: Math.random() * Math.PI * 2,
+        flipSpeed: Math.random() * 0.012 + 0.004,
+        cv: Math.floor(Math.random() * 5),
+        alpha: Math.random() * 0.3 + 0.55,
+        depth: Math.random()   // 0=뒤, 1=앞 (깊이 정렬용)
+      }));
+      // 공중에 살랑 떠다니는 잎사귀 (소수)
+      this.particles = Array.from({length: 8}, () => this._newAirLeaf(true));
       this._animMint();
     },
 
-    _newWindLeaf(scattered) {
+    _newAirLeaf(scattered) {
       const w = this.canvas.width, h = this.canvas.height;
-      const greens = ['rgba(94,213,130,0.75)','rgba(72,199,112,0.68)','rgba(134,239,172,0.72)','rgba(166,246,201,0.70)'];
       return {
-        x: scattered ? Math.random() * w : -25,
-        y: Math.random() * h * 0.65 + h * 0.05,
-        size: Math.random() * 11 + 7,
-        vx: Math.random() * 1.2 + 0.6,
-        vy: Math.random() * 0.45 - 0.22,
-        angle: Math.random() * Math.PI * 2,
-        aSpeed: (Math.random() - 0.5) * 0.05,
-        alpha: Math.random() * 0.5 + 0.35,
-        color: greens[Math.floor(Math.random() * greens.length)],
+        x: scattered ? Math.random() * w : Math.random() * w,
+        y: scattered ? Math.random() * h * 0.75 : -20,
+        size: Math.random() * 14 + 9,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: Math.random() * 0.5 + 0.15,
         swing: Math.random() * Math.PI * 2,
-        swingS: Math.random() * 0.016 + 0.006
+        swingS: Math.random() * 0.012 + 0.005,
+        baseAngle: Math.random() * Math.PI * 2,
+        aSpeed: (Math.random() - 0.5) * 0.015,
+        flipAngle: Math.random() * Math.PI * 2,
+        flipSpeed: Math.random() * 0.018 + 0.006,
+        cv: Math.floor(Math.random() * 5),
+        alpha: Math.random() * 0.3 + 0.5
       };
     },
 
@@ -1505,220 +1576,132 @@
       const t = Date.now() / 1000;
       ctx.clearRect(0, 0, w, h);
 
-      // ① 안개 낀 봄 배경
-      this._drawMistySky(ctx, w, h);
-      // ② 뒤쪽 흐릿한 나무들
-      this._drawBgTrees(ctx, w, h);
-      // ③ 중간 안개 띠
-      this._drawMistBand(ctx, w, h);
-      // ④ 위에서 내려오는 나뭇가지 (좌/우)
-      this._drawHangingBranch(ctx, w, h, t, false);
-      this._drawHangingBranch(ctx, w, h, t, true);
-      // ⑤ 아래 초원
-      this._drawGround(ctx, w, h, t);
+      // ① 은은한 민트 배경
+      const bg = ctx.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, 'rgba(220,245,228,0.72)');
+      bg.addColorStop(0.6, 'rgba(200,238,212,0.60)');
+      bg.addColorStop(1, 'rgba(170,220,185,0.75)');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
 
-      // ⑥ 날아다니는 잎사귀
+      // ② 바닥 잎더미 (depth 순으로 그림 — 뒤부터)
+      const sorted = [...this.floorLeaves].sort((a, b) => a.depth - b.depth);
+      sorted.forEach(leaf => {
+        const sway = Math.sin(t * leaf.swaySpeed + leaf.swayOff) * leaf.swayAmp;
+        const flipScaleX = Math.cos(t * leaf.flipSpeed + leaf.flipOff);
+        this._draw3DLeaf(ctx, leaf.x, leaf.y, leaf.size, leaf.baseAngle + sway, flipScaleX, leaf.alpha, leaf.cv);
+      });
+
+      // ③ 공중 잎사귀
       this.particles.forEach((p, i) => {
-        p.swing += p.swingS; p.x += p.vx; p.y += Math.sin(p.swing) * 0.45 + p.vy; p.angle += p.aSpeed;
-        if (p.x > w + 30) { this.particles[i] = this._newWindLeaf(false); return; }
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-        ctx.globalAlpha = p.alpha;
-        this._leafPath(ctx, p.size); ctx.fillStyle = p.color; ctx.fill();
-        ctx.restore();
+        p.swing += p.swingS;
+        p.x += Math.sin(p.swing) * 0.6 + p.vx;
+        p.y += p.vy;
+        p.baseAngle += p.aSpeed;
+        p.flipAngle += p.flipSpeed;
+        if (p.y > h + 30) { this.particles[i] = this._newAirLeaf(false); return; }
+        this._draw3DLeaf(ctx, p.x, p.y, p.size, p.baseAngle, Math.cos(p.flipAngle), p.alpha, p.cv);
       });
 
       this.animId = requestAnimationFrame(() => this._animMint());
     },
 
-    _drawMistySky(ctx, w, h) {
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0,   'rgba(195,232,205,0.70)');
-      g.addColorStop(0.45,'rgba(218,243,220,0.60)');
-      g.addColorStop(0.75,'rgba(200,238,210,0.55)');
-      g.addColorStop(1,   'rgba(168,220,178,0.65)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-    },
+    // 3D 잎사귀 그리기 (scaleX로 뒤집기 효과)
+    _draw3DLeaf(ctx, x, y, size, angle, scaleX, alpha, cv) {
+      const isFront = scaleX >= 0;
+      const absScale = Math.abs(scaleX);
 
-    _drawBgTrees(ctx, w, h) {
-      const trees = [
-        {x:w*0.18,y:h*0.58,r:h*0.24,op:0.14},{x:w*0.38,y:h*0.62,r:h*0.20,op:0.11},
-        {x:w*0.55,y:h*0.60,r:h*0.28,op:0.13},{x:w*0.72,y:h*0.57,r:h*0.22,op:0.15},
-        {x:w*0.88,y:h*0.60,r:h*0.19,op:0.12},
+      // 앞면: 선명한 초록, 뒷면: 연한 초록
+      const frontPalette = [
+        ['#c8f0d4', '#4ade80', '#16a34a'],
+        ['#bbf7d0', '#34d399', '#059669'],
+        ['#d1fae5', '#6ee7b7', '#10b981'],
+        ['#a7f3d0', '#2dd4bf', '#0d9488'],
+        ['#dcfce7', '#86efac', '#22c55e'],
       ];
-      trees.forEach(t => {
-        // 줄기
-        ctx.strokeStyle = `rgba(80,55,30,${t.op * 1.3})`; ctx.lineWidth = 6;
-        ctx.beginPath(); ctx.moveTo(t.x, h * 0.82); ctx.lineTo(t.x, t.y); ctx.stroke();
-        // 잎 구름
-        const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r);
-        g.addColorStop(0, `rgba(82,175,100,${t.op * 1.8})`);
-        g.addColorStop(1, 'rgba(82,175,100,0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill();
-      });
-    },
+      const backPalette = [
+        ['#86efac', '#22c55e', '#15803d'],
+        ['#6ee7b7', '#10b981', '#065f46'],
+        ['#a7f3d0', '#34d399', '#047857'],
+        ['#99f6e4', '#14b8a6', '#0f766e'],
+        ['#bbf7d0', '#4ade80', '#166534'],
+      ];
+      const [ch, cm, cd] = isFront ? frontPalette[cv] : backPalette[cv];
 
-    _drawMistBand(ctx, w, h) {
-      const g = ctx.createLinearGradient(0, h*0.32, 0, h*0.62);
-      g.addColorStop(0, 'rgba(245,252,245,0)');
-      g.addColorStop(0.45,'rgba(245,252,245,0.52)');
-      g.addColorStop(1, 'rgba(245,252,245,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, h*0.32, w, h*0.30);
-    },
-
-    // 위에서 뻗어 내려오는 가지
-    _drawHangingBranch(ctx, w, h, t, isRight) {
-      const sx = isRight ? w * 1.02 : -w * 0.02;
-      const sy = -5;
-      const ex = isRight ? w * 0.36 : w * 0.64;
-      const ey = h * 0.40;
-      const cpx1 = isRight ? w * 0.82 : w * 0.18;
-      const cpy1 = h * 0.02;
-      const cpx2 = isRight ? w * 0.52 : w * 0.48;
-      const cpy2 = h * 0.20;
-      const sw = Math.sin(t * 0.65) * 5; // 전체 흔들림
-
-      // 굵은 주 가지
       ctx.save();
-      ctx.strokeStyle = 'rgba(65,40,18,0.80)'; ctx.lineWidth = 10; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(sx, sy);
-      ctx.bezierCurveTo(cpx1, cpy1, cpx2 + sw, cpy2 + sw * 0.5, ex + sw * 1.5, ey + sw);
-      ctx.stroke();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.scale(scaleX, 1);
+      ctx.globalAlpha = alpha * (0.55 + absScale * 0.45);
 
-      // 잔가지들 (세로로 늘어짐)
-      const subCount = 9;
-      for (let si = 0; si < subCount; si++) {
-        const tb = (si + 1) / (subCount + 1);
-        const mt = 1 - tb;
-        // 베지어 곡선 위 점
-        const bx = mt*mt*mt*sx + 3*mt*mt*tb*cpx1 + 3*mt*tb*tb*(cpx2+sw) + tb*tb*tb*(ex+sw*1.5);
-        const by = mt*mt*mt*sy + 3*mt*mt*tb*cpy1 + 3*mt*tb*tb*(cpy2+sw*0.5) + tb*tb*tb*(ey+sw);
-        // 잔가지 길이와 각도 (결정론적)
-        const subLen = (28 + (si * 17 % 38)) * (h / 550);
-        const baseAng = isRight ? -0.5 - si * 0.08 : 0.5 + si * 0.08;
-        const sway2 = Math.sin(t * 1.0 + si * 0.6) * 0.18;
-        const ang = baseAng + sway2;
-        const ex2 = bx + Math.sin(ang) * subLen * (isRight ? -1 : 1);
-        const ey2 = by + subLen + Math.sin(t * 0.8 + si * 0.4) * 6;
+      const l = size, lw = size * 0.50;
 
-        ctx.strokeStyle = 'rgba(65,40,18,0.55)'; ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ex2, ey2); ctx.stroke();
-
-        // 잔가지 끝 잎사귀 묶음
-        const leafN = 3 + (si % 3);
-        for (let li = 0; li < leafN; li++) {
-          const spread = (li / leafN) * Math.PI * 0.9 - Math.PI * 0.45;
-          const lAngle = spread + Math.sin(t * 1.2 + si * 0.7 + li * 0.5) * 0.22;
-          const lDist = (10 + li * 9) * (h / 550);
-          const lx = ex2 + Math.cos(lAngle) * lDist * (isRight ? -1 : 1);
-          const ly = ey2 + Math.sin(lAngle) * lDist * 0.6 + lDist * 0.5;
-          const lSize = (13 + li * 5) * (h / 550);
-          this._drawLeaf(ctx, lx, ly, lSize, lAngle + (isRight ? Math.PI : 0), 0.78);
-          // 잎 사이사이 작은 꽃
-          if (li === 1 && si % 3 === 0) this._drawMiniFlower(ctx, lx + 5, ly - 4, 5 * h/550, 0.65);
-        }
+      // 그림자 (앞면, 깊이감)
+      if (isFront && absScale > 0.3) {
+        ctx.save();
+        ctx.translate(l * 0.07, l * 0.09);
+        ctx.globalAlpha = alpha * 0.10 * absScale;
+        this._mint3DLeafPath(ctx, l, lw);
+        ctx.fillStyle = '#166534'; ctx.fill();
+        ctx.restore();
       }
 
-      // 주 가지 위 잎사귀
-      for (let li = 0; li < 13; li++) {
-        const tl = (li + 0.5) / 13;
-        const mt2 = 1 - tl;
-        const lx = mt2*mt2*mt2*sx + 3*mt2*mt2*tl*cpx1 + 3*mt2*tl*tl*(cpx2+sw) + tl*tl*tl*(ex+sw*1.5);
-        const ly = mt2*mt2*mt2*sy + 3*mt2*mt2*tl*cpy1 + 3*mt2*tl*tl*(cpy2+sw*0.5) + tl*tl*tl*(ey+sw);
-        const lAng = (li % 2 === 0 ? 1 : -1) * (0.55 + li * 0.03)
-                   + Math.sin(t * 0.9 + li * 0.65) * 0.2;
-        const lSz = (13 + li * 1.5) * (h / 550);
-        this._drawLeaf(ctx, lx + Math.sin(t * 0.7 + li) * 3, ly + lSz * 0.4, lSz, lAng, 0.80);
+      // 잎 본체 — 라디얼 그라디언트로 입체감
+      const rg = ctx.createRadialGradient(-lw*0.15, -l*0.35, l*0.04, 0, -l*0.4, l*0.9);
+      rg.addColorStop(0, isFront ? 'rgba(255,255,255,0.75)' : 'rgba(200,240,215,0.7)');
+      rg.addColorStop(0.3, ch);
+      rg.addColorStop(0.7, cm);
+      rg.addColorStop(1, cd);
+
+      this._mint3DLeafPath(ctx, l, lw);
+      ctx.fillStyle = rg; ctx.fill();
+
+      // 테두리
+      this._mint3DLeafPath(ctx, l, lw);
+      ctx.strokeStyle = `rgba(34,197,94,${0.18 * absScale})`;
+      ctx.lineWidth = 0.7; ctx.stroke();
+
+      // 잎맥 (앞면)
+      if (isFront && absScale > 0.2) {
+        ctx.globalAlpha = alpha * absScale * 0.30;
+        ctx.strokeStyle = '#15803d'; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+        // 주맥
+        ctx.beginPath(); ctx.moveTo(0, l*0.22); ctx.bezierCurveTo(0,-l*0.1,0,-l*0.55,0,-l*0.88); ctx.stroke();
+        // 측맥 3쌍
+        [0.25, 0.5, 0.72].forEach((t2, idx) => {
+          for (const s of [-1, 1]) {
+            ctx.beginPath();
+            ctx.moveTo(0, -l * t2);
+            ctx.quadraticCurveTo(s * lw * (0.3 + idx * 0.1), -l * (t2 + 0.12), s * lw * (0.45 + idx * 0.12), -l * (t2 + 0.08));
+            ctx.stroke();
+          }
+        });
       }
+
+      // 하이라이트
+      if (isFront && absScale > 0.45) {
+        const hg = ctx.createRadialGradient(-lw*0.2, -l*0.36, 0, -lw*0.2, -l*0.36, l*0.28);
+        hg.addColorStop(0, `rgba(255,255,255,${0.50 * absScale})`);
+        hg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.globalAlpha = alpha * absScale * 0.75;
+        ctx.beginPath(); ctx.ellipse(-lw*0.2, -l*0.36, l*0.18, l*0.24, -0.35, 0, Math.PI*2);
+        ctx.fillStyle = hg; ctx.fill();
+      }
+
       ctx.restore();
     },
 
-    _drawLeaf(ctx, x, y, size, angle, alpha) {
-      ctx.save();
-      ctx.translate(x, y); ctx.rotate(angle); ctx.globalAlpha = alpha;
-      const l = size, w = size * 0.54;
-      const g = ctx.createLinearGradient(0, -l, 0, l * 0.25);
-      g.addColorStop(0, '#5ec882'); g.addColorStop(0.5, '#4ade80'); g.addColorStop(1, '#78edaa');
-      this._leafPath(ctx, size); ctx.fillStyle = g; ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(0, l * 0.2); ctx.lineTo(0, -l * 0.82); ctx.stroke();
-      ctx.restore();
-    },
-
-    _leafPath(ctx, size) {
-      const l = size, w = size * 0.54;
+    _mint3DLeafPath(ctx, l, lw) {
       ctx.beginPath();
-      ctx.moveTo(0, l * 0.25);
-      ctx.bezierCurveTo(-w*0.65, 0, -w*0.7, -l*0.6, 0, -l);
-      ctx.bezierCurveTo(w*0.7, -l*0.6, w*0.65, 0, 0, l*0.25);
+      ctx.moveTo(0, l * 0.22);
+      ctx.bezierCurveTo(-lw*0.6, l*0.04, -lw*0.72, -l*0.42, -lw*0.15, -l*0.80);
+      ctx.bezierCurveTo(-lw*0.05, -l*1.00, lw*0.05, -l*1.00, lw*0.15, -l*0.80);
+      ctx.bezierCurveTo(lw*0.72, -l*0.42, lw*0.6, l*0.04, 0, l*0.22);
       ctx.closePath();
     },
-
-    _drawMiniFlower(ctx, x, y, r, alpha) {
-      ctx.save(); ctx.translate(x, y); ctx.globalAlpha = alpha;
-      for (let i = 0; i < 5; i++) {
-        ctx.save(); ctx.rotate((i / 5) * Math.PI * 2);
-        ctx.beginPath(); ctx.ellipse(0, -r * 0.68, r * 0.32, r * 0.52, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffcce0'; ctx.fill(); ctx.restore();
-      }
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#ff80b0'; ctx.fill();
-      ctx.restore();
-    },
-
-    _drawGround(ctx, w, h, t) {
-      // 초원 그라디언트
-      const g = ctx.createLinearGradient(0, h * 0.73, 0, h);
-      g.addColorStop(0, 'rgba(95,195,118,0)');
-      g.addColorStop(0.18,'rgba(85,185,108,0.42)');
-      g.addColorStop(0.55,'rgba(72,172,95,0.62)');
-      g.addColorStop(1,   'rgba(58,158,80,0.72)');
-      ctx.fillStyle = g; ctx.fillRect(0, h * 0.73, w, h * 0.27);
-
-      // 풀잎
-      const bladeCount = 35;
-      for (let i = 0; i < bladeCount; i++) {
-        const bx = (i / bladeCount) * w * 1.15 - w * 0.08;
-        const by = h * 0.77 + (i * 7 % 18);
-        const bh = (32 + i * 11 % 30) * (h / 550);
-        const sw = Math.sin(t * 1.3 + i * 0.45) * 9;
-        ctx.strokeStyle = `rgba(68,180,92,${0.38 + (i % 4) * 0.08})`;
-        ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(bx, by);
-        ctx.quadraticCurveTo(bx + sw * 0.6, by - bh * 0.5, bx + sw, by - bh);
-        ctx.stroke();
-      }
-
-      // 바닥 꽃들
-      const flowers = [
-        {x:w*0.07,y:h*0.86,r:7,isWhite:false},{x:w*0.14,y:h*0.89,r:5.5,isWhite:false},
-        {x:w*0.23,y:h*0.87,r:6,isWhite:true}, {x:w*0.32,y:h*0.91,r:9,isWhite:true},
-        {x:w*0.44,y:h*0.92,r:8,isWhite:true}, {x:w*0.56,y:h*0.91,r:9,isWhite:true},
-        {x:w*0.67,y:h*0.90,r:7,isWhite:true}, {x:w*0.78,y:h*0.88,r:6,isWhite:false},
-        {x:w*0.87,y:h*0.86,r:7,isWhite:false},{x:w*0.93,y:h*0.89,r:5.5,isWhite:false},
-      ];
-      flowers.forEach((f, i) => {
-        const sw = Math.sin(t * 0.95 + i * 0.7) * 2.5;
-        const r = f.r * (h / 550);
-        if (f.isWhite) {
-          // 데이지 (흰 꽃)
-          ctx.save(); ctx.translate(f.x + sw, f.y); ctx.globalAlpha = 0.72;
-          for (let p = 0; p < 8; p++) {
-            ctx.save(); ctx.rotate((p / 8) * Math.PI * 2);
-            ctx.beginPath(); ctx.ellipse(0, -r * 0.68, r * 0.28, r * 0.48, 0, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill(); ctx.restore();
-          }
-          ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
-          ctx.fillStyle = '#f0c835'; ctx.fill();
-          ctx.restore();
-        } else {
-          this._drawMiniFlower(ctx, f.x + sw, f.y, r, 0.70);
-        }
-      });
-    }
   };
 
   // ── 테마 ──
-  const VALID_THEMES = ['dark', 'white', 'spring1', 'spring2'];
+  const VALID_THEMES = ['dark', 'white', 'spring1'];
 
   function applyTheme(t) {
     if (!VALID_THEMES.includes(t)) t = 'dark';
@@ -1729,7 +1712,7 @@
     localStorage.setItem('theme', t);
     // 이펙트 전환
     if (fx.canvas) {
-      if (t === 'spring1' || t === 'spring2') fx.start(t);
+      if (t === 'spring1') fx.start(t);
       else fx.stop();
     }
   }
@@ -1761,7 +1744,7 @@
     fx.init();
     // 저장된 테마가 spring 계열이면 이펙트 시작
     const savedTheme = localStorage.getItem('theme') || 'dark';
-    if (savedTheme === 'spring1' || savedTheme === 'spring2') fx.start(savedTheme);
+    if (savedTheme === 'spring1') fx.start(savedTheme);
     voterName = voterInput.value.trim();
     if (voterName) await fetchMyVotes();
     await loadVotingStatus();
@@ -2000,27 +1983,33 @@
     const pw = document.getElementById('adminPw').value;
     if (!pw) { toast('비밀번호를 입력해주세요.', 'error'); return; }
 
+    let valid = false;
     try {
       const res = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pw })
       });
+      if (!res.ok) { toast('서버 오류가 발생했습니다.', 'error'); return; }
       const data = await res.json();
+      valid = !!data.valid;
+    } catch {
+      toast('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.', 'error');
+      return;
+    }
 
-      if (data.valid) {
-        isAdmin = true;
-        adminPassword = pw;
-        document.getElementById('adminLoginArea').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('docUploadBox').classList.add('visible');
-        updateAdminVotingStatus();
-        lucide.createIcons();
-        toast('관리자로 인증되었습니다.', 'success');
-      } else {
-        toast('비밀번호가 틀렸습니다.', 'error');
-      }
-    } catch { toast('오류가 발생했습니다.', 'error'); }
+    if (valid) {
+      isAdmin = true;
+      adminPassword = pw;
+      document.getElementById('adminLoginArea').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('docUploadBox').classList.add('visible');
+      updateAdminVotingStatus();
+      try { lucide.createIcons(); } catch {}
+      toast('관리자로 인증되었습니다.', 'success');
+    } else {
+      toast('비밀번호가 틀렸습니다.', 'error');
+    }
   }
 
   // ── 투표 종료 토글 ──

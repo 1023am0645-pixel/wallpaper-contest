@@ -16,7 +16,9 @@ import io
 PORT = 3000
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "public", "uploads")
+DOCS_DIR = os.path.join(os.path.dirname(__file__), "public", "docs")
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
+BASE_DIR = os.path.dirname(__file__)
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -33,6 +35,7 @@ MIME_TYPES = {
 }
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(DOCS_DIR, exist_ok=True)
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, "w") as f:
         json.dump({"works": [], "votes": {}, "adminPassword": "admin1234"}, f)
@@ -144,6 +147,61 @@ class Handler(BaseHTTPRequestHandler):
             data = load_data()
             votes = data["votes"].get(voter, [])
             self.send_json({"votes": votes})
+            return
+
+        if path == "/api/status":
+            data = load_data()
+            self.send_json({"votingEnded": data.get("votingEnded", False)})
+            return
+
+        if path == "/api/docs":
+            docs = []
+            if os.path.isdir(DOCS_DIR):
+                for fname in sorted(os.listdir(DOCS_DIR), reverse=True):
+                    fp = os.path.join(DOCS_DIR, fname)
+                    if os.path.isfile(fp):
+                        stat = os.stat(fp)
+                        display = fname[9:] if len(fname) > 9 and fname[8] == '_' else fname
+                        docs.append({
+                            "filename": fname,
+                            "displayName": display,
+                            "size": stat.st_size,
+                            "uploadedAt": stat.st_mtime * 1000
+                        })
+            self.send_json(docs)
+            return
+
+        if path.startswith("/api/docs/download/"):
+            fname = unquote(path[len("/api/docs/download/"):])
+            fname = os.path.basename(fname)
+            fpath = os.path.join(DOCS_DIR, fname)
+            if not os.path.isfile(fpath):
+                self.send_error_json("파일을 찾을 수 없습니다.", 404)
+                return
+            display = fname[9:] if len(fname) > 9 and fname[8] == '_' else fname
+            with open(fpath, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Disposition", f"attachment; filename*=UTF-8''{display.encode('utf-8').hex()}")
+            self.send_header("Content-Length", len(body))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # 캐릭터 이미지 (ASCII 경로)
+        if path == "/cursor.png":
+            fpath = os.path.join(BASE_DIR, "강이.png")
+            if os.path.isfile(fpath):
+                with open(fpath, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", len(body))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(404); self.end_headers()
             return
 
         if path == "/api/results":
@@ -276,6 +334,60 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"success": True, "action": "added", "myVotes": data["votes"][voter_name]})
             return
 
+        if path == "/api/admin/verify":
+            try:
+                payload = json.loads(body.decode("utf-8"))
+            except Exception:
+                self.send_error_json("잘못된 요청입니다.")
+                return
+            data = load_data()
+            pw = (payload.get("password") or "").strip()
+            self.send_json({"valid": pw == data.get("adminPassword", "admin1234")})
+            return
+
+        if path == "/api/admin/end-voting":
+            try:
+                payload = json.loads(body.decode("utf-8"))
+            except Exception:
+                self.send_error_json("잘못된 요청입니다.")
+                return
+            data = load_data()
+            pw = (payload.get("password") or "").strip()
+            if pw != data.get("adminPassword", "admin1234"):
+                self.send_error_json("비밀번호가 틀렸습니다.", 403)
+                return
+            data["votingEnded"] = not data.get("votingEnded", False)
+            save_data(data)
+            self.send_json({"success": True, "votingEnded": data["votingEnded"]})
+            return
+
+        if path == "/api/admin/docs/upload":
+            admin_pw = self.headers.get("x-admin-password", "")
+            data = load_data()
+            if admin_pw != data.get("adminPassword", "admin1234"):
+                self.send_error_json("비밀번호가 틀렸습니다.", 403)
+                return
+            ct = self.headers.get("Content-Type", "")
+            fields, file_data, file_name, _ = parse_multipart(ct, body)
+            if file_data is None or not file_name:
+                self.send_error_json("파일이 없습니다.")
+                return
+            if len(file_data) > 50 * 1024 * 1024:
+                self.send_error_json("파일 크기는 50MB 이하여야 합니다.")
+                return
+            allowed_exts = {".hwp", ".hwpx", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip"}
+            _, ext = os.path.splitext(file_name)
+            if ext.lower() not in allowed_exts:
+                self.send_error_json("허용되지 않는 파일 형식입니다.")
+                return
+            safe_base = "".join(c if c.isalnum() or c in "._- " else "_" for c in os.path.splitext(file_name)[0])[:60]
+            saved_name = str(uuid.uuid4())[:8] + "_" + safe_base + ext.lower()
+            with open(os.path.join(DOCS_DIR, saved_name), "wb") as f:
+                f.write(file_data)
+            display = saved_name[9:] if len(saved_name) > 9 and saved_name[8] == '_' else saved_name
+            self.send_json({"success": True, "filename": saved_name, "displayName": display})
+            return
+
         self.send_response(404)
         self.end_headers()
 
@@ -305,6 +417,19 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
             save_data({"works": [], "votes": {}, "adminPassword": data.get("adminPassword", "admin1234")})
+            self.send_json({"success": True})
+            return
+
+        if path.startswith("/api/admin/docs/"):
+            fname = os.path.basename(path[len("/api/admin/docs/"):])
+            fpath = os.path.join(DOCS_DIR, fname)
+            if not os.path.isfile(fpath):
+                self.send_error_json("파일을 찾을 수 없습니다.", 404)
+                return
+            try:
+                os.remove(fpath)
+            except Exception:
+                pass
             self.send_json({"success": True})
             return
 
