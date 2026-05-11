@@ -345,6 +345,26 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"valid": pw == data.get("adminPassword", "admin1234")})
             return
 
+        if path == "/api/admin/change-password":
+            try:
+                payload = json.loads(body.decode("utf-8"))
+            except Exception:
+                self.send_error_json("잘못된 요청입니다.")
+                return
+            data = load_data()
+            current = (payload.get("current") or "").strip()
+            new_pw = (payload.get("newPassword") or "").strip()
+            if current != data.get("adminPassword", "admin1234"):
+                self.send_error_json("현재 비밀번호가 틀렸습니다.", 403)
+                return
+            if len(new_pw) < 4:
+                self.send_error_json("새 비밀번호는 4자 이상이어야 합니다.")
+                return
+            data["adminPassword"] = new_pw
+            save_data(data)
+            self.send_json({"success": True})
+            return
+
         if path == "/api/admin/end-voting":
             try:
                 payload = json.loads(body.decode("utf-8"))

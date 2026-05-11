@@ -311,8 +311,10 @@
     .drop-zone p { color: var(--muted); font-size: 0.88rem; margin-bottom: 4px; }
     .drop-zone small { color: var(--muted); font-size: 0.76rem; opacity: 0.7; }
 
-    .preview-wrap { margin-top: 12px; display: none; }
-    .preview-wrap img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+    .preview-wrap { display: none; width: 100%; }
+    .preview-wrap img { width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; }
+    .drop-zone.has-preview { padding: 12px; }
+    .drop-zone.has-preview .drop-content { display: none; }
 
     .btn-primary {
       width: 100%;
@@ -1126,12 +1128,15 @@
           <label><i data-lucide="image"></i>이미지 파일 * (JPG, PNG, WEBP)</label>
           <div class="drop-zone" id="dropZone">
             <input type="file" accept="image/*" id="fileInput" onchange="previewFile(this)" required />
-            <div class="drop-icon">🖼️</div>
-            <p>클릭하거나 이미지를 드래그해서 올려주세요</p>
             <small>JPG · PNG · WEBP · 최대 30MB</small>
-          </div>
-          <div class="preview-wrap" id="previewWrap">
-            <img id="previewImg" src="" alt="미리보기" />
+            <div class="drop-content">
+              <div class="drop-icon">🖼️</div>
+              <p>클릭하거나 이미지를 드래그해서 올려주세요</p>
+              <small>JPG · PNG · WEBP · 최대 30MB</small>
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+              <img id="previewImg" src="" alt="미리보기" />
+            </div>
           </div>
         </div>
         <button type="submit" class="btn-primary" id="uploadBtn">
@@ -1227,6 +1232,21 @@
 
         <div class="admin-divider"></div>
 
+        <!-- 비밀번호 변경 -->
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i data-lucide="key-round" style="width:13px;height:13px"></i>
+          관리자 비밀번호 변경
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+          <input type="password" id="newPw1" class="pw-input" placeholder="새 비밀번호" style="flex:1;min-width:120px" />
+          <input type="password" id="newPw2" class="pw-input" placeholder="새 비밀번호 확인" style="flex:1;min-width:120px" />
+          <button class="btn-verify" onclick="changePassword()" style="width:auto;padding:10px 18px;margin-top:0">
+            <i data-lucide="check"></i>변경
+          </button>
+        </div>
+
+        <div class="admin-divider"></div>
+
         <!-- 전체 초기화 -->
         <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
           <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>
@@ -1269,11 +1289,14 @@
         const c = document.createElement('canvas');
         c.width = size; c.height = size;
         const ctx = c.getContext('2d');
-        // 머리 부분 크롭: 가로 8~92%, 세로 0~60%
-        ctx.drawImage(img,
-          img.width * 0.08, 0,
-          img.width * 0.84, img.height * 0.60,
-          0, 0, size, size);
+        // 머리 부분 크롭: 가로 5~95%, 세로 0~55% — 원본 비율 유지
+        const srcX = img.width * 0.05, srcY = 0;
+        const srcW = img.width * 0.90, srcH = img.height * 0.55;
+        const ratio = srcW / srcH;
+        const dstW = ratio >= 1 ? size : size * ratio;
+        const dstH = ratio >= 1 ? size / ratio : size;
+        ctx.drawImage(img, srcX, srcY, srcW, srcH,
+          (size - dstW) / 2, (size - dstH) / 2, dstW, dstH);
         const url = c.toDataURL('image/png');
         const old = document.getElementById('cursor-style');
         if (old) old.remove();
@@ -1324,20 +1347,17 @@
        ════════════════════════════ */
     _newBlossomParticle(scattered) {
       const w = this.canvas.width, h = this.canvas.height;
-      // 꽃잎 크기: 작고 다양하게
-      const size = Math.random() * 10 + 8;
-      // scaleX를 0~1 사이로 → 꽃잎이 뒤집히며 3D 회전처럼 보임
+      const size = Math.random() * 13 + 7;
       return {
         x: Math.random() * (w + 80) - 40,
         y: scattered ? Math.random() * h : -20,
         size,
-        vy: Math.random() * 0.55 + 0.2,   // 아주 천천히
-        vx: Math.random() * 0.3 - 0.15,
+        vy: Math.random() * 0.6 + 0.15,
+        vx: Math.random() * 0.4 - 0.2,
         angle: Math.random() * Math.PI * 2,
-        aSpeed: (Math.random() - 0.5) * 0.018,  // 부드럽게 회전
+        aSpeed: (Math.random() - 0.5) * 0.02,
         swing: Math.random() * Math.PI * 2,
-        swingS: Math.random() * 0.012 + 0.005,
-        // 3D 효과: scaleX가 -1~1 사이를 왕복 → 꽃잎이 뒤집히는 효과
+        swingS: Math.random() * 0.014 + 0.004,
         flipAngle: Math.random() * Math.PI * 2,
         flipSpeed: Math.random() * 0.025 + 0.008,
         alpha: Math.random() * 0.35 + 0.45,
@@ -1347,20 +1367,24 @@
 
     _initBlossom() {
       const w = this.canvas.width, h = this.canvas.height;
-      this.particles = Array.from({length: 38}, () => this._newBlossomParticle(true));
-      // 바닥 쌓인 꽃잎 (고정)
-      this.floorPetals = Array.from({length: 70}, (_, i) => ({
-        x: (i / 70) * w * 1.1 - w * 0.05 + (Math.random() * 50 - 25),
-        y: h * 0.82 + Math.random() * h * 0.17,
-        size: Math.random() * 10 + 5,
-        angle: Math.random() * Math.PI * 2,
-        swayOff: Math.random() * Math.PI * 2,
-        swayAmp: Math.random() * 0.06 + 0.01,
-        swaySpeed: Math.random() * 0.6 + 0.3,
-        cv: Math.floor(Math.random() * 4),
-        alpha: Math.random() * 0.25 + 0.45,
-        depth: Math.random()
-      }));
+      this.particles = Array.from({length: 65}, () => this._newBlossomParticle(true));
+      // 바닥 쌓인 꽃잎 — 수북하게 3겹으로
+      this.floorPetals = Array.from({length: 220}, (_, i) => {
+        const layer = Math.floor(i / 73); // 0=뒤, 1=중간, 2=앞
+        const yBase = h * (0.78 + layer * 0.065);
+        return {
+          x: Math.random() * w * 1.2 - w * 0.1,
+          y: yBase + Math.random() * h * 0.08,
+          size: Math.random() * (9 + layer * 3) + (4 + layer * 2),
+          angle: Math.random() * Math.PI * 2,
+          swayOff: Math.random() * Math.PI * 2,
+          swayAmp: Math.random() * 0.05 + 0.01,
+          swaySpeed: Math.random() * 0.5 + 0.2,
+          cv: Math.floor(Math.random() * 4),
+          alpha: Math.random() * 0.2 + (0.45 + layer * 0.1),
+          depth: layer / 3 + Math.random() * 0.3
+        };
+      });
       this._animBlossom();
     },
 
@@ -1390,12 +1414,18 @@
         ctx.restore();
       });
 
-      // 바닥 전체에 분홍 안개 오버레이 (쌓인 느낌 강화)
-      const fog = ctx.createLinearGradient(0, h * 0.78, 0, h);
+      // 바닥 분홍 안개 — 꽃잎 수북하게 쌓인 느낌
+      const fog = ctx.createLinearGradient(0, h * 0.72, 0, h);
       fog.addColorStop(0, 'rgba(255,220,235,0)');
-      fog.addColorStop(0.4, 'rgba(255,210,228,0.18)');
-      fog.addColorStop(1, 'rgba(255,195,218,0.30)');
-      ctx.fillStyle = fog; ctx.fillRect(0, h * 0.78, w, h * 0.22);
+      fog.addColorStop(0.3, 'rgba(255,205,225,0.22)');
+      fog.addColorStop(0.7, 'rgba(255,190,215,0.38)');
+      fog.addColorStop(1, 'rgba(255,180,210,0.50)');
+      ctx.fillStyle = fog; ctx.fillRect(0, h * 0.72, w, h * 0.28);
+      // 맨 아래 꽃잎 더미 강조
+      const heap = ctx.createLinearGradient(0, h * 0.90, 0, h);
+      heap.addColorStop(0, 'rgba(255,200,225,0)');
+      heap.addColorStop(1, 'rgba(255,210,230,0.45)');
+      ctx.fillStyle = heap; ctx.fillRect(0, h * 0.90, w, h * 0.10);
 
       this.particles.forEach((p, i) => {
         p.swing += p.swingS;
@@ -1889,8 +1919,13 @@
     if (!file) return;
     const wrap = document.getElementById('previewWrap');
     const img = document.getElementById('previewImg');
+    const dz = document.getElementById('dropZone');
     const reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; wrap.style.display = 'block'; };
+    reader.onload = e => {
+      img.src = e.target.result;
+      wrap.style.display = 'block';
+      dz.classList.add('has-preview');
+    };
     reader.readAsDataURL(file);
   }
 
@@ -1919,6 +1954,7 @@
       toast('작품이 업로드됐습니다! 🎉', 'success');
       document.getElementById('uploadForm').reset();
       document.getElementById('previewWrap').style.display = 'none';
+      document.getElementById('dropZone').classList.remove('has-preview');
       showSection('gallery');
       await loadWorks();
     } catch { toast('업로드 중 오류가 발생했습니다.', 'error'); }
@@ -2014,6 +2050,8 @@
 
   // ── 투표 종료 토글 ──
   async function toggleVoting() {
+    const msg = votingEnded ? '투표를 재개하시겠습니까?' : '투표를 종료하시겠습니까?';
+    if (!confirm(msg)) return;
     try {
       const res = await fetch('/api/admin/end-voting', {
         method: 'POST',
@@ -2030,9 +2068,31 @@
     } catch { toast('오류가 발생했습니다.', 'error'); }
   }
 
+  // ── 비밀번호 변경 ──
+  async function changePassword() {
+    const p1 = document.getElementById('newPw1').value;
+    const p2 = document.getElementById('newPw2').value;
+    if (!p1) { toast('새 비밀번호를 입력해주세요.', 'error'); return; }
+    if (p1.length < 4) { toast('비밀번호는 4자 이상이어야 합니다.', 'error'); return; }
+    if (p1 !== p2) { toast('비밀번호가 일치하지 않습니다.', 'error'); return; }
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: adminPassword, newPassword: p1 })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      adminPassword = p1;
+      document.getElementById('newPw1').value = '';
+      document.getElementById('newPw2').value = '';
+      toast('비밀번호가 변경됐습니다.', 'success');
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
   // ── 전체 초기화 ──
   async function resetAll() {
-    if (!confirm('정말로 모든 작품과 투표를 초기화하시겠습니까?')) return;
+    if (!confirm('전체 초기화를 하시겠습니까?\n⚠️ 모든 작품과 투표 내역이 영구 삭제됩니다.')) return;
 
     try {
       const res = await fetch('/api/admin/reset', {

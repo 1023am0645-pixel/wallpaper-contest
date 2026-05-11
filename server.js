@@ -261,6 +261,21 @@ app.get('/api/status', (req, res) => {
   res.json({ votingEnded: data.votingEnded || false });
 });
 
+// 어드민: 비밀번호 변경
+app.post('/api/admin/change-password', (req, res) => {
+  const { current, newPassword } = req.body;
+  const data = getData();
+  if (current !== data.adminPassword) {
+    return res.status(403).json({ error: '현재 비밀번호가 틀렸습니다.' });
+  }
+  if (!newPassword || newPassword.length < 4) {
+    return res.status(400).json({ error: '새 비밀번호는 4자 이상이어야 합니다.' });
+  }
+  data.adminPassword = newPassword;
+  saveData(data);
+  res.json({ success: true });
+});
+
 // 어드민: 비밀번호 확인
 app.post('/api/admin/verify', (req, res) => {
   const { password } = req.body;
