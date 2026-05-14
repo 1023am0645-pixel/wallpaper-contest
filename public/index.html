@@ -442,30 +442,30 @@
     .work-card:hover .admin-delete-btn { opacity: 1; }
 
     .work-img-wrap { aspect-ratio: 16/9; overflow: hidden; background: #0a0a15; cursor: pointer; }
-    .work-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-    .work-img-wrap:hover img { transform: scale(1.05); }
+    .work-img-wrap img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.15s; }
+    .work-img-wrap:hover img { transform: scale(1.03); }
 
-    .work-info { padding: 14px 16px; }
+    .work-info { padding: 8px 12px; }
 
     .work-title {
-      font-size: 0.93rem;
+      font-size: 0.85rem;
       font-weight: 600;
-      margin-bottom: 3px;
+      margin-bottom: 1px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .work-author { font-size: 0.8rem; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 4px; }
-    .work-author svg { width: 11px; height: 11px; }
+    .work-author { font-size: 0.75rem; color: var(--muted); margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .work-author svg { width: 10px; height: 10px; }
 
-    .work-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+    .work-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 6px; }
 
     .vote-btn {
       background: var(--surface);
       border: 1px solid var(--border);
-      width: 42px;
-      height: 42px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       cursor: pointer;
       display: flex;
@@ -475,8 +475,8 @@
       flex-shrink: 0;
     }
     .vote-btn svg {
-      width: 20px;
-      height: 20px;
+      width: 17px;
+      height: 17px;
       stroke: var(--muted);
       fill: none;
       transition: all 0.2s;
