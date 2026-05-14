@@ -1016,6 +1016,90 @@
       .nav-btn { padding: 12px 6px; }
     }
 
+    /* ── 로그인 오버레이 ── */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 44px 40px;
+      max-width: 380px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+      animation: loginPop 0.3s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes loginPop {
+      from { opacity: 0; transform: scale(0.85) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .login-box h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .login-box p { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+    .login-input {
+      width: 100%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+      text-align: center;
+    }
+    .login-input:focus { outline: none; border-color: var(--accent2); }
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 13px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-bottom: 14px;
+    }
+    .login-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+    .login-btn:active { transform: translateY(0); }
+    .login-note {
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    /* 로그인 후 헤더 닉네임 표시 */
+    .voter-display {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      white-space: nowrap;
+    }
+    .voter-display svg { width: 13px; height: 13px; color: var(--accent2); }
+
     /* ── form password input ── */
     .pw-input {
       width: 100%;
@@ -1056,10 +1140,11 @@
       </button>
     </div>
 
-    <!-- 투표자 이름 -->
+    <!-- 로그인된 닉네임 표시 -->
     <div class="voter-area">
-      <label><i data-lucide="user"></i>내 이름</label>
-      <input type="text" class="voter-input" id="voterName" placeholder="이름 입력" maxlength="20" />
+      <span class="voter-display" id="voterDisplay">
+        <i data-lucide="user-round"></i><span id="voterNameDisplay">로딩중...</span>
+      </span>
       <span class="vote-badge" id="voteBadge"><i data-lucide="heart"></i> 0 / 2</span>
     </div>
   </div>
@@ -1118,8 +1203,10 @@
 
       <form id="uploadForm" onsubmit="handleUpload(event)">
         <div class="form-group">
-          <label><i data-lucide="user"></i>이름 *</label>
-          <input type="text" id="uploadAuthor" placeholder="본인 이름" required maxlength="30" />
+          <label><i data-lucide="user"></i>업로더</label>
+          <input type="text" id="uploadAuthor" readonly
+            style="background:var(--card);border:1px solid var(--border);color:var(--muted);
+                   padding:10px 14px;border-radius:10px;font-size:0.93rem;width:100%;cursor:default" />
         </div>
         <div class="form-group">
           <label><i data-lucide="type"></i>작품 제목 (선택)</label>
@@ -1272,6 +1359,20 @@
 
 </main>
 
+<!-- 로그인 오버레이 -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>배경화면 컨테스트</h2>
+    <p>닉네임을 입력하고 시작하세요<br>같은 닉네임으로 어디서 접속해도 동일한 투표권 2개</p>
+    <input class="login-input" type="text" id="loginInput" placeholder="닉네임 입력 (예: 홍길동)"
+      maxlength="20" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">
+      <i data-lucide="log-in"></i> 시작하기
+    </button>
+    <p class="login-note">닉네임은 투표 및 작품 업로드 시 표시됩니다</p>
+  </div>
+</div>
+
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()"><i data-lucide="x"></i></button>
@@ -1290,19 +1391,38 @@
   let votingEnded = false;
   let adminPassword = '';
 
-  // ── 브라우저 고유 투표 토큰 (localStorage 영속) ──
-  function getVoteToken() {
-    let token = localStorage.getItem('voteToken');
-    if (!token) {
-      token = typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-            const r = Math.random() * 16 | 0;
-            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-          });
-      localStorage.setItem('voteToken', token);
-    }
-    return token;
+  // ── 세션 헬퍼 ──
+  function getSessionToken() { return localStorage.getItem('sessionToken') || ''; }
+  function getNickname()     { return localStorage.getItem('nickname') || ''; }
+
+  // ── 로그인 ──
+  async function doLogin() {
+    const nickname = document.getElementById('loginInput').value.trim();
+    if (!nickname) { alert('닉네임을 입력해주세요.'); return; }
+    const btn = document.querySelector('.login-btn');
+    btn.disabled = true; btn.textContent = '로그인 중...';
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || '오류가 발생했습니다.'); return; }
+
+      localStorage.setItem('sessionToken', data.sessionToken);
+      localStorage.setItem('nickname', nickname);
+      voterName = nickname;
+      myVotes = data.myVotes || [];
+
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('voterNameDisplay').textContent = nickname;
+      document.getElementById('uploadAuthor').value = nickname;
+      updateVoteBadge();
+      renderGallery();
+      lucide.createIcons();
+    } catch { alert('서버에 연결할 수 없습니다.'); }
+    finally { btn.disabled = false; btn.innerHTML = '<i data-lucide="log-in"></i> 시작하기'; lucide.createIcons(); }
   }
 
   // ── 커서 설정 (강이 캐릭터 머리) ──
@@ -1703,29 +1823,26 @@
     applyTheme(saved);
   })();
 
-  // ── 투표자 이름 ──
-  const voterInput = document.getElementById('voterName');
-  voterInput.value = localStorage.getItem('voterName') || '';
-
-  voterInput.addEventListener('input', async () => {
-    voterName = voterInput.value.trim();
-    localStorage.setItem('voterName', voterName);
-    renderGallery();
-  });
-
-  voterInput.addEventListener('blur', async () => {
-    if (voterInput.value.trim()) await loadWorks();
-  });
-
   // ── 초기화 ──
   window.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
     setupCursor();
     fx.init();
-    // 저장된 테마가 spring 계열이면 이펙트 시작
     const savedTheme = localStorage.getItem('theme') || 'dark';
     if (savedTheme === 'spring1') fx.start(savedTheme);
-    voterName = voterInput.value.trim();
+
+    // 세션 복원
+    const savedNickname = getNickname();
+    const savedToken    = getSessionToken();
+    if (savedNickname && savedToken) {
+      voterName = savedNickname;
+      document.getElementById('voterNameDisplay').textContent = savedNickname;
+      document.getElementById('uploadAuthor').value = savedNickname;
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      document.getElementById('loginOverlay').style.display = 'flex';
+    }
+
     await fetchMyVotes();
     await loadVotingStatus();
     await loadWorks();
@@ -1799,9 +1916,11 @@
 
   // ── 내 투표 조회 ──
   async function fetchMyVotes() {
+    const token = getSessionToken();
+    if (!token) return;
     try {
       const res = await fetch('/api/votes/me', {
-        headers: { 'X-Vote-Token': getVoteToken() }
+        headers: { 'X-Session-Token': token }
       });
       const data = await res.json();
       myVotes = data.votes || [];
@@ -1878,9 +1997,9 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Vote-Token': getVoteToken()
+          'X-Session-Token': getSessionToken()
         },
-        body: JSON.stringify({ voterName: voterName || '익명', workId })
+        body: JSON.stringify({ workId })
       });
       const data = await res.json();
       if (!res.ok) { toast(data.error, 'error'); return; }
@@ -1923,13 +2042,16 @@
     fd.append('author', author);
     fd.append('title', title);
     fd.append('image', file);
-    fd.append('uploaderToken', getVoteToken());
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> 업로드 중...';
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'X-Session-Token': getSessionToken() },
+        body: fd
+      });
       const data = await res.json();
       if (!res.ok) { toast(data.error, 'error'); return; }
 
