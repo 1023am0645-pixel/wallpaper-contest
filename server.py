@@ -391,8 +391,21 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body); return
 
+        if path == "/api/admin/sessions":
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
+            pw = self.headers.get("X-Admin-Password", "")
+            data = load_data()
+            if not check_password(pw, data.get("adminPassword", "")): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
+            sessions = data.get("sessions", {})
+            result = [
+                {"nickname": nick, "votes": len(info.get("votes", []))}
+                for nick, info in sessions.items()
+            ]
+            result.sort(key=lambda x: x["nickname"])
+            self.send_json({"sessions": result}); return
+
         if path == "/api/admin/export":
-            if not check_rate_limit(ip, "admin", 40, 900): self.send_error_json("요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
             pw = self.headers.get("X-Admin-Password", "")
             data = load_data()
             if not check_password(pw, data.get("adminPassword", "")): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
@@ -446,7 +459,7 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(length) if length else b""
 
         if path == "/api/login":
-            if not check_rate_limit(ip, "login", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "login", 20, 30): self.send_error_json("요청이 너무 많습니다.", 429); return
             try: payload = json.loads(body.decode("utf-8"))
             except Exception: self.send_error_json("잘못된 요청입니다."); return
             nickname = sanitize(payload.get("nickname", ""), 50)
@@ -465,7 +478,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"success": True, **result}); return
 
         if path == "/api/upload":
-            if not check_rate_limit(ip, "upload", 10, 60): self.send_error_json("업로드 요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "upload", 10, 30): self.send_error_json("업로드 요청이 너무 많습니다.", 429); return
             ct = self.headers.get("Content-Type", "")
             fields, file_data, file_name, _ = parse_multipart(ct, body)
             author = sanitize(fields.get("author", ""), 50)
@@ -494,7 +507,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"success": True, "work": work}); return
 
         if path == "/api/vote":
-            if not check_rate_limit(ip, "vote", 20, 60): self.send_error_json("투표 요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "vote", 20, 30): self.send_error_json("투표 요청이 너무 많습니다.", 429); return
             try: payload = json.loads(body.decode("utf-8"))
             except Exception: self.send_error_json("잘못된 요청입니다."); return
             work_id = sanitize(payload.get("workId", ""), 200)
@@ -523,14 +536,14 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/admin/verify":
-            if not check_rate_limit(ip, "admin", 40, 900): self.send_error_json("요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
             try: payload = json.loads(body.decode("utf-8"))
             except Exception: self.send_error_json("잘못된 요청입니다."); return
             data = load_data()
             self.send_json({"valid": check_password((payload.get("password") or "").strip(), data.get("adminPassword", ""))}); return
 
         if path == "/api/admin/change-password":
-            if not check_rate_limit(ip, "admin", 40, 900): self.send_error_json("요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
             try: payload = json.loads(body.decode("utf-8"))
             except Exception: self.send_error_json("잘못된 요청입니다."); return
             data = load_data()
@@ -542,7 +555,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"success": True}); return
 
         if path == "/api/admin/end-voting":
-            if not check_rate_limit(ip, "admin", 40, 900): self.send_error_json("요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
             try: payload = json.loads(body.decode("utf-8"))
             except Exception: self.send_error_json("잘못된 요청입니다."); return
             data = load_data()
@@ -552,7 +565,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"success": True, "votingEnded": new_state}); return
 
         if path == "/api/admin/docs/upload":
-            if not check_rate_limit(ip, "admin", 40, 900): self.send_error_json("요청이 너무 많습니다.", 429); return
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
             admin_pw = self.headers.get("X-Admin-Password", "")
             data = load_data()
             if not check_password(admin_pw, data.get("adminPassword", "")): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
@@ -576,7 +589,7 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         ip = self.get_client_ip()
-        if not check_rate_limit(ip, "admin", 40, 900): self.send_error_json("요청이 너무 많습니다.", 429); return
+        if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else b""
         try: payload = json.loads(body.decode("utf-8"))

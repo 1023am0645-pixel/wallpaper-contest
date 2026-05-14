@@ -766,6 +766,37 @@
     .lightbox-close svg { width: 16px; height: 16px; }
     .lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
+    /* 투표 확인 팝업 */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1100;
+      align-items: center;
+      justify-content: center;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 28px 22px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .confirm-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { font-size: 0.88rem; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+    .confirm-box .confirm-title { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .confirm-btns button { flex: 1; padding: 10px; border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); transition: all 0.15s; }
+    .confirm-ok { background: #ef4444; color: white; border-color: #ef4444 !important; }
+    .confirm-ok:hover { background: #dc2626; }
+    .confirm-cancel { background: transparent; color: var(--muted); }
+    .confirm-cancel:hover { background: var(--hover); }
+
     /* ── 로딩 ── */
     .spinner {
       display: inline-block;
@@ -1345,6 +1376,20 @@
 
         <div class="admin-divider"></div>
 
+        <div class="admin-divider"></div>
+
+        <!-- 닉네임(회원) 목록 -->
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i data-lucide="users" style="width:13px;height:13px"></i>
+          로그인 기록 (닉네임별 투표 현황)
+        </p>
+        <button class="btn-verify" onclick="loadSessions()" style="margin-bottom:12px">
+          <i data-lucide="refresh-cw"></i>목록 불러오기
+        </button>
+        <div id="sessionsList" style="display:none;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px"></div>
+
+        <div class="admin-divider"></div>
+
         <!-- 전체 초기화 -->
         <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
           <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>
@@ -1370,6 +1415,18 @@
       <i data-lucide="log-in"></i> 시작하기
     </button>
     <p class="login-note">닉네임은 투표 및 작품 업로드 시 표시됩니다</p>
+  </div>
+</div>
+
+<!-- 투표 확인 팝업 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3><i data-lucide="heart" style="width:18px;height:18px;vertical-align:-3px;color:#ef4444"></i> 투표 확인</h3>
+    <p>이 작품에 투표하시겠습니까?<br><span class="confirm-title" id="confirmWorkTitle"></span></p>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">취소</button>
+      <button class="confirm-ok" onclick="doVoteConfirmed()">투표하기</button>
+    </div>
   </div>
 </div>
 
@@ -1984,14 +2041,31 @@
   }
 
   // ── 투표 ──
-  async function vote(workId) {
+  let _pendingVoteId = null;
+
+  function vote(workId) {
     const work = works.find(w => w.id === workId);
     const isVoted = myVotes.includes(workId);
 
     if (!isVoted && myVotes.length >= 2) {
-      toast('이미 2표를 모두 사용했습니다. 투표를 취소하고 다시 선택할 수 있어요.', 'error'); return;
+      toast('이미 2표를 모두 사용했습니다.', 'error'); return;
     }
 
+    _pendingVoteId = workId;
+    document.getElementById('confirmWorkTitle').textContent = work?.title || '(제목 없음)';
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+
+  function closeConfirm() {
+    _pendingVoteId = null;
+    document.getElementById('confirmOverlay').classList.remove('open');
+  }
+
+  async function doVoteConfirmed() {
+    const workId = _pendingVoteId;
+    closeConfirm();
+    if (!workId) return;
+    const work = works.find(w => w.id === workId);
     try {
       const res = await fetch('/api/vote', {
         method: 'POST',
@@ -2195,6 +2269,29 @@
   }
 
   // ── 전체 초기화 ──
+  async function loadSessions() {
+    try {
+      const res = await fetch('/api/admin/sessions', {
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      const box = document.getElementById('sessionsList');
+      box.style.display = 'block';
+      if (!data.sessions.length) {
+        box.innerHTML = '<p style="font-size:0.82rem;color:var(--muted);padding:8px">로그인 기록이 없습니다.</p>';
+        return;
+      }
+      box.innerHTML = data.sessions.map(s =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:8px;font-size:0.83rem;border-bottom:1px solid var(--border)">
+          <span><i data-lucide="user-round" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px"></i>${s.nickname}</span>
+          <span style="color:var(--muted)">${s.votes}/2표 사용</span>
+        </div>`
+      ).join('');
+      lucide.createIcons();
+    } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
   async function exportData() {
     try {
       const res = await fetch('/api/admin/export', {
