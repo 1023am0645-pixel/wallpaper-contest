@@ -1247,6 +1247,17 @@
 
         <div class="admin-divider"></div>
 
+        <!-- 데이터 백업 -->
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i data-lucide="download" style="width:13px;height:13px"></i>
+          데이터 백업 (Railway 재배포 전 반드시 저장하세요)
+        </p>
+        <button class="btn-verify" onclick="exportData()" style="margin-bottom:18px">
+          <i data-lucide="download"></i>데이터 백업 다운로드
+        </button>
+
+        <div class="admin-divider"></div>
+
         <!-- 전체 초기화 -->
         <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
           <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>
@@ -1278,6 +1289,21 @@
   let isAdmin = false;
   let votingEnded = false;
   let adminPassword = '';
+
+  // ── 브라우저 고유 투표 토큰 (localStorage 영속) ──
+  function getVoteToken() {
+    let token = localStorage.getItem('voteToken');
+    if (!token) {
+      token = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+          });
+      localStorage.setItem('voteToken', token);
+    }
+    return token;
+  }
 
   // ── 커서 설정 (강이 캐릭터 머리) ──
   // 한글 URL 대신 ASCII 경로 /cursor.png 사용 (서버에서 동일 파일 제공)
@@ -1684,8 +1710,7 @@
   voterInput.addEventListener('input', async () => {
     voterName = voterInput.value.trim();
     localStorage.setItem('voterName', voterName);
-    if (voterName) await fetchMyVotes();
-    else { myVotes = []; updateVoteBadge(); renderGallery(); }
+    renderGallery();
   });
 
   voterInput.addEventListener('blur', async () => {
@@ -1701,7 +1726,7 @@
     const savedTheme = localStorage.getItem('theme') || 'dark';
     if (savedTheme === 'spring1') fx.start(savedTheme);
     voterName = voterInput.value.trim();
-    if (voterName) await fetchMyVotes();
+    await fetchMyVotes();
     await loadVotingStatus();
     await loadWorks();
     setInterval(loadWorks, 30000);
@@ -1774,9 +1799,10 @@
 
   // ── 내 투표 조회 ──
   async function fetchMyVotes() {
-    if (!voterName) return;
     try {
-      const res = await fetch(`/api/votes/${encodeURIComponent(voterName)}`);
+      const res = await fetch('/api/votes/me', {
+        headers: { 'X-Vote-Token': getVoteToken() }
+      });
       const data = await res.json();
       myVotes = data.votes || [];
       updateVoteBadge();
@@ -1840,8 +1866,6 @@
 
   // ── 투표 ──
   async function vote(workId) {
-    if (!voterName) { toast('상단에 이름을 입력해주세요!', 'error'); return; }
-
     const work = works.find(w => w.id === workId);
     const isVoted = myVotes.includes(workId);
 
@@ -1852,8 +1876,11 @@
     try {
       const res = await fetch('/api/vote', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voterName, workId })
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Vote-Token': getVoteToken()
+        },
+        body: JSON.stringify({ voterName: voterName || '익명', workId })
       });
       const data = await res.json();
       if (!res.ok) { toast(data.error, 'error'); return; }
@@ -1896,6 +1923,7 @@
     fd.append('author', author);
     fd.append('title', title);
     fd.append('image', file);
+    fd.append('uploaderToken', getVoteToken());
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> 업로드 중...';
@@ -2045,6 +2073,23 @@
   }
 
   // ── 전체 초기화 ──
+  async function exportData() {
+    try {
+      const res = await fetch('/api/admin/export', {
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      if (!res.ok) { toast('백업 실패: 비밀번호를 확인하세요.', 'error'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('백업 파일이 다운로드됐습니다.', 'success');
+    } catch { toast('백업 중 오류가 발생했습니다.', 'error'); }
+  }
+
   async function resetAll() {
     if (!confirm('전체 초기화를 하시겠습니까?\n⚠️ 모든 작품과 투표 내역이 영구 삭제됩니다.')) return;
 
