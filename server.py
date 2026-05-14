@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 # ── Cloudflare R2 (boto3, 없으면 로컬 전용 모드) ──
 try:
     import boto3
-    from botocore.exceptions import ClientError
+
     _BOTO3 = True
 except ImportError:
     _BOTO3 = False
@@ -41,7 +41,7 @@ MIME_TYPES = {
     ".ico":  "image/x-icon",
 }
 ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
-ALLOWED_DOC_EXTS   = {".hwp", ".hwpx", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip"}
+ALLOWED_DOC_EXTS   = {".hwp", ".hwpx", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip", ".md"}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(DOCS_DIR,   exist_ok=True)
