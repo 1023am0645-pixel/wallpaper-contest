@@ -8,8 +8,8 @@ import socket
 import hashlib
 import threading
 import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, unquote
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, unquote, quote
 from datetime import datetime, timezone
 
 # ── Cloudflare R2 (boto3, 없으면 로컬 전용 모드) ──
@@ -255,6 +255,19 @@ def sanitize(val, max_len=100):
 def get_vote_count(data, work_id):
     return sum(1 for s in data.get("sessions", {}).values() if work_id in s.get("votes", []))
 
+def is_admin_request(handler, data):
+    pw = handler.headers.get("X-Admin-Password", "")
+    return bool(pw) and check_password(pw, data.get("adminPassword", ""))
+
+def validate_backup_data(data):
+    if not isinstance(data, dict):
+        return False
+    if not isinstance(data.get("works", []), list):
+        return False
+    if not isinstance(data.get("sessions", {}), dict):
+        return False
+    return True
+
 def parse_multipart(content_type, body_bytes):
     boundary = None
     for part in content_type.split(";"):
@@ -357,6 +370,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/results":
             data = load_data()
+            if not data.get("votingEnded", False) and not is_admin_request(self, data):
+                self.send_error_json("투표 종료 전에는 결과를 볼 수 없습니다.", 403); return
             results = [{"id": w["id"], "author": w["author"], "title": w["title"],
                         "filename": w["filename"], "voteCount": get_vote_count(data, w["id"])}
                        for w in data["works"]]
@@ -386,10 +401,27 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Disposition",
-                             f"attachment; filename*=UTF-8''{display.encode().hex()}")
+                             f"attachment; filename*=UTF-8''{quote(display)}")
             self.send_header("Content-Length", len(body))
             self.end_headers()
             self.wfile.write(body); return
+
+        if path == "/api/admin/status":
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
+            data = load_data()
+            if not is_admin_request(self, data): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
+            r2 = _get_r2()
+            data_mtime = os.path.getmtime(DATA_FILE) if os.path.exists(DATA_FILE) else None
+            self.send_json({
+                "server": "python",
+                "storageMode": "r2" if r2 else "local",
+                "r2Connected": bool(r2),
+                "works": len(data.get("works", [])),
+                "voters": len(data.get("sessions", {})),
+                "docs": len([f for f in os.listdir(DOCS_DIR) if os.path.isfile(os.path.join(DOCS_DIR, f))]) if os.path.isdir(DOCS_DIR) else 0,
+                "uploads": len([f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]) if os.path.isdir(UPLOAD_DIR) else 0,
+                "dataUpdatedAt": datetime.fromtimestamp(data_mtime, timezone.utc).isoformat() if data_mtime else None,
+            }); return
 
         if path == "/api/admin/sessions":
             if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
@@ -419,7 +451,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body); return
 
         char_map = {
-            "/cursor.png": "강이.png", "/%EA%B0%95%EC%9D%B4.png": "강이.png", "/강이.png": "강이.png",
+            "/cursor.png": "public/강이.png", "/%EA%B0%95%EC%9D%B4.png": "public/강이.png", "/강이.png": "public/강이.png",
             "/%EA%B1%B4%EA%B0%95%EA%B7%A0%EB%8D%A9.png": "건강균덩.png",
             "/character.png": "건강균덩.png", "/건강균덩.png": "건강균덩.png",
         }
@@ -582,6 +614,35 @@ class Handler(BaseHTTPRequestHandler):
             display = saved[9:] if len(saved) > 9 and saved[8] == "_" else saved
             self.send_json({"success": True, "filename": saved, "displayName": display}); return
 
+        if path == "/api/admin/import":
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
+            admin_pw = self.headers.get("X-Admin-Password", "")
+            current = load_data()
+            if not check_password(admin_pw, current.get("adminPassword", "")): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
+            ct = self.headers.get("Content-Type", "")
+            _, file_data, file_name, _ = parse_multipart(ct, body)
+            if file_data is None:
+                self.send_error_json("백업 JSON 파일을 선택해주세요."); return
+            if file_name and not file_name.lower().endswith(".json"):
+                self.send_error_json("JSON 백업 파일만 복원할 수 있습니다."); return
+            try:
+                imported = json.loads(file_data.decode("utf-8"))
+            except Exception:
+                self.send_error_json("백업 파일을 읽을 수 없습니다."); return
+            if not validate_backup_data(imported):
+                self.send_error_json("백업 파일 형식이 올바르지 않습니다."); return
+            if "adminPassword" not in imported:
+                imported["adminPassword"] = current.get("adminPassword", hash_password("admin1234"))
+            with data_lock:
+                save_data(imported)
+            migrate_data()
+            restored = load_data()
+            self.send_json({
+                "success": True,
+                "works": len(restored.get("works", [])),
+                "voters": len(restored.get("sessions", {}))
+            }); return
+
         self.send_response(404); self.end_headers()
 
     # ──────── DELETE ────────
@@ -645,7 +706,7 @@ if __name__ == "__main__":
     migrate_data()
     sync_from_r2()
 
-    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     local_ip = get_local_ip()
     r2_status = "연결됨" if _get_r2() else "미설정 (로컬 모드)"
 

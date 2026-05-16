@@ -1337,6 +1337,20 @@
           <i data-lucide="shield-check"></i>관리자 인증됨
         </div>
 
+        <!-- 운영 상태 -->
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i data-lucide="activity" style="width:13px;height:13px"></i>
+          운영 상태
+        </p>
+        <div id="adminStatusBox" style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:12px;font-size:0.83rem;color:var(--muted)">
+          상태를 불러오지 않았습니다.
+        </div>
+        <button class="btn-verify" onclick="loadAdminStatus()" style="margin-bottom:18px">
+          <i data-lucide="refresh-cw"></i>상태 새로고침
+        </button>
+
+        <div class="admin-divider"></div>
+
         <!-- 투표 종료 토글 -->
         <div class="voting-status-box">
           <div class="voting-status-info">
@@ -1373,8 +1387,16 @@
         <button class="btn-verify" onclick="exportData()" style="margin-bottom:18px">
           <i data-lucide="download"></i>데이터 백업 다운로드
         </button>
-
-        <div class="admin-divider"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
+          <label class="btn-verify" style="width:auto;margin:0;cursor:pointer">
+            <i data-lucide="upload"></i>백업 파일 선택
+            <input type="file" id="backupFileInput" accept=".json,application/json" onchange="onBackupFileChange(this)" style="display:none" />
+          </label>
+          <span id="backupFileName" style="font-size:0.82rem;color:var(--muted)">선택된 파일 없음</span>
+          <button class="btn-danger" onclick="importData()" style="width:auto;padding:10px 16px;margin:0">
+            <i data-lucide="rotate-ccw"></i>백업 복원
+          </button>
+        </div>
 
         <div class="admin-divider"></div>
 
@@ -2149,7 +2171,9 @@
     if (!votingEnded && !isAdmin) return;
 
     try {
-      const res = await fetch('/api/results');
+      const res = await fetch('/api/results', {
+        headers: isAdmin ? { 'X-Admin-Password': adminPassword } : {}
+      });
       const data = await res.json();
       const { results, totalVoters } = data;
 
@@ -2219,6 +2243,7 @@
       document.getElementById('adminPanel').style.display = 'block';
       document.getElementById('docUploadBox').classList.add('visible');
       updateAdminVotingStatus();
+      await loadAdminStatus();
       try { lucide.createIcons(); } catch {}
       toast('관리자로 인증되었습니다.', 'success');
     } else {
@@ -2266,6 +2291,62 @@
       document.getElementById('newPw2').value = '';
       toast('비밀번호가 변경됐습니다.', 'success');
     } catch { toast('오류가 발생했습니다.', 'error'); }
+  }
+
+  // ── 운영 상태 / 백업 복원 ──
+  async function loadAdminStatus() {
+    try {
+      const res = await fetch('/api/admin/status', {
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      const updated = data.dataUpdatedAt ? new Date(data.dataUpdatedAt).toLocaleString('ko-KR') : '확인 불가';
+      const storage = data.r2Connected ? 'R2 백업 연결됨' : '로컬 저장만 사용 중';
+      const storageColor = data.r2Connected ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('adminStatusBox').innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
+          <span>서버: <b>${escHtml(data.server)}</b></span>
+          <span>저장: <b style="color:${storageColor}">${storage}</b></span>
+          <span>작품: <b>${data.works}개</b></span>
+          <span>참여자: <b>${data.voters}명</b></span>
+          <span>업로드 이미지: <b>${data.uploads}개</b></span>
+          <span>자료: <b>${data.docs}개</b></span>
+        </div>
+        <div style="margin-top:8px">마지막 데이터 저장: ${escHtml(updated)}</div>
+      `;
+      lucide.createIcons();
+    } catch { toast('운영 상태를 불러오지 못했습니다.', 'error'); }
+  }
+
+  function onBackupFileChange(input) {
+    document.getElementById('backupFileName').textContent =
+      input.files[0] ? input.files[0].name : '선택된 파일 없음';
+  }
+
+  async function importData() {
+    const input = document.getElementById('backupFileInput');
+    if (!input.files[0]) { toast('복원할 백업 JSON 파일을 선택해주세요.', 'error'); return; }
+    if (!confirm('백업을 복원하면 현재 작품/투표 데이터가 백업 파일 내용으로 바뀝니다. 계속할까요?')) return;
+
+    const fd = new FormData();
+    fd.append('backup', input.files[0]);
+    try {
+      const res = await fetch('/api/admin/import', {
+        method: 'POST',
+        headers: { 'X-Admin-Password': adminPassword },
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error, 'error'); return; }
+      toast(`백업 복원 완료: 작품 ${data.works}개, 참여자 ${data.voters}명`, 'success');
+      input.value = '';
+      document.getElementById('backupFileName').textContent = '선택된 파일 없음';
+      await fetchMyVotes();
+      await loadVotingStatus();
+      await loadWorks();
+      await loadAdminStatus();
+    } catch { toast('백업 복원 중 오류가 발생했습니다.', 'error'); }
   }
 
   // ── 전체 초기화 ──
