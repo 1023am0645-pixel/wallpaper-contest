@@ -1,0 +1,10 @@
+{
+  "name": "wallpaper-contest",
+  "version": "1.0.0",
+  "description": "사내 AI 웰페이퍼 공모전 투표 사이트",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
