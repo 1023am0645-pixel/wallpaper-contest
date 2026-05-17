@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""AI 웰페이퍼 공모전 서버 (Python 3 표준 라이브러리 + boto3 for R2)"""
+"""AI 웰페이퍼 공모전 서버 (Python 3 표준 라이브러리)"""
 
 import json
 import os
 import uuid
 import socket
 import hashlib
+import hmac
 import threading
 import time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote, quote
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 from datetime import datetime, timezone
-
-# ── Cloudflare R2 (boto3, 없으면 로컬 전용 모드) ──
-try:
-    import boto3
-
-    _BOTO3 = True
-except ImportError:
-    _BOTO3 = False
+import xml.etree.ElementTree as ET
 
 PORT = int(os.environ.get("PORT", 3000))
 _BASE      = os.path.dirname(__file__)
@@ -73,63 +69,119 @@ R2_ACCESS_KEY = env_first("R2_ACCESS_KEY_ID", "R2_ACCESS_KEY")
 R2_SECRET     = env_first("R2_SECRET_ACCESS_KEY", "R2_SECRET_KEY")
 R2_BUCKET     = env_first("R2_BUCKET_NAME", "R2_BUCKET", default="wallpaper-contest")
 
-_r2 = None
-
 def _get_r2():
-    global _r2
-    if _r2:
-        return _r2
-    if not _BOTO3 or not all([R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET]):
-        return None
-    _r2 = boto3.client(
-        "s3",
-        endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
-        aws_access_key_id=R2_ACCESS_KEY,
-        aws_secret_access_key=R2_SECRET,
-        region_name="auto",
+    return all([R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET, R2_BUCKET])
+
+def _r2_signing_key(date_stamp):
+    key = ("AWS4" + R2_SECRET).encode("utf-8")
+    for msg in [date_stamp, "auto", "s3", "aws4_request"]:
+        key = hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+    return key
+
+def _r2_request(method, key="", data=b"", content_type="application/octet-stream", query=None):
+    if not _get_r2():
+        return None, b"R2 environment variables are missing"
+    query = query or {}
+    host = f"{R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+    payload = data or b""
+    payload_hash = hashlib.sha256(payload).hexdigest()
+    now = datetime.now(timezone.utc)
+    amz_date = now.strftime("%Y%m%dT%H%M%SZ")
+    date_stamp = now.strftime("%Y%m%d")
+
+    object_path = f"/{R2_BUCKET}" + (f"/{key}" if key else "")
+    canonical_uri = quote(object_path, safe="/-_.~")
+    canonical_query = "&".join(
+        f"{quote(str(k), safe='-_.~')}={quote(str(v), safe='-_.~')}"
+        for k, v in sorted(query.items())
     )
-    return _r2
+    canonical_headers = (
+        f"host:{host}\n"
+        f"x-amz-content-sha256:{payload_hash}\n"
+        f"x-amz-date:{amz_date}\n"
+    )
+    signed_headers = "host;x-amz-content-sha256;x-amz-date"
+    canonical_request = "\n".join([
+        method,
+        canonical_uri,
+        canonical_query,
+        canonical_headers,
+        signed_headers,
+        payload_hash,
+    ])
+
+    scope = f"{date_stamp}/auto/s3/aws4_request"
+    string_to_sign = "\n".join([
+        "AWS4-HMAC-SHA256",
+        amz_date,
+        scope,
+        hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
+    ])
+    signature = hmac.new(
+        _r2_signing_key(date_stamp),
+        string_to_sign.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+    authorization = (
+        "AWS4-HMAC-SHA256 "
+        f"Credential={R2_ACCESS_KEY}/{scope}, "
+        f"SignedHeaders={signed_headers}, "
+        f"Signature={signature}"
+    )
+
+    url = f"https://{host}{canonical_uri}"
+    if canonical_query:
+        url += "?" + canonical_query
+    headers = {
+        "Authorization": authorization,
+        "X-Amz-Content-Sha256": payload_hash,
+        "X-Amz-Date": amz_date,
+    }
+    if method == "PUT":
+        headers["Content-Type"] = content_type
+    try:
+        req = Request(url, data=payload if method in ["PUT"] else None, headers=headers, method=method)
+        with urlopen(req, timeout=20) as resp:
+            return resp.status, resp.read()
+    except HTTPError as e:
+        try:
+            body = e.read()
+        except Exception:
+            body = str(e).encode("utf-8")
+        return e.code, body
+    except URLError as e:
+        return None, str(e).encode("utf-8")
 
 def r2_upload(key, data, content_type="application/octet-stream"):
-    r2 = _get_r2()
-    if not r2:
+    if not _get_r2():
         return False
-    try:
-        r2.put_object(Bucket=R2_BUCKET, Key=key, Body=data, ContentType=content_type)
+    status, body = _r2_request("PUT", key=key, data=data, content_type=content_type)
+    if status in [200, 201]:
         return True
-    except Exception as e:
-        print(f"[R2 업로드 오류] {key}: {e}")
-        return False
+    print(f"[R2 업로드 오류] {key}: {status} {body[:300]!r}")
+    return False
 
 def r2_download(key):
-    r2 = _get_r2()
-    if not r2:
+    if not _get_r2():
         return None
-    try:
-        obj = r2.get_object(Bucket=R2_BUCKET, Key=key)
-        return obj["Body"].read()
-    except Exception:
-        return None
+    status, body = _r2_request("GET", key=key)
+    return body if status == 200 else None
 
 def r2_delete(key):
-    r2 = _get_r2()
-    if not r2:
+    if not _get_r2():
         return False
-    try:
-        r2.delete_object(Bucket=R2_BUCKET, Key=key)
-        return True
-    except Exception:
-        return False
+    status, _ = _r2_request("DELETE", key=key)
+    return status in [200, 204]
 
 def r2_list(prefix):
-    r2 = _get_r2()
-    if not r2:
+    if not _get_r2():
         return []
-    try:
-        resp = r2.list_objects_v2(Bucket=R2_BUCKET, Prefix=prefix)
-        return [o["Key"] for o in resp.get("Contents", [])]
-    except Exception:
+    status, body = _r2_request("GET", query={"list-type": "2", "prefix": prefix})
+    if status != 200:
+        print(f"[R2 목록 오류] {status} {body[:300]!r}")
         return []
+    root = ET.fromstring(body)
+    return [el.text for el in root.iter() if el.tag.endswith("Key") and el.text]
 
 def r2_configured():
     return bool(_get_r2())
@@ -151,11 +203,8 @@ def r2_effective_status():
     }
 
 def r2_health():
-    r2 = _get_r2()
-    if not r2:
+    if not _get_r2():
         missing = []
-        if not _BOTO3:
-            missing.append("boto3 미설치")
         if not R2_ACCOUNT_ID:
             missing.append("R2_ACCOUNT_ID 없음")
         if not R2_ACCESS_KEY:
@@ -165,11 +214,10 @@ def r2_health():
         if not R2_BUCKET:
             missing.append("R2_BUCKET_NAME 없음")
         return False, ", ".join(missing) or "R2 설정 미확인"
-    try:
-        r2.list_objects_v2(Bucket=R2_BUCKET, MaxKeys=1)
+    status, body = _r2_request("GET", query={"list-type": "2", "max-keys": "1"})
+    if status == 200:
         return True, ""
-    except Exception as e:
-        return False, str(e)
+    return False, f"R2 연결 실패: {status} {body[:160].decode('utf-8', errors='replace')}"
 
 def init_data_file():
     if os.path.exists(DATA_FILE):
