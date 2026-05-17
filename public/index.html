@@ -2304,6 +2304,12 @@
       const updated = data.dataUpdatedAt ? new Date(data.dataUpdatedAt).toLocaleString('ko-KR') : '확인 불가';
       const storage = data.r2Connected ? 'R2 백업 연결됨' : '로컬 저장만 사용 중';
       const storageColor = data.r2Connected ? 'var(--success)' : 'var(--danger)';
+      const envLabels = data.envPresent
+        ? Object.entries(data.envPresent).map(([k, v]) => `${k}: ${v ? '있음' : '없음'}`).join(' · ')
+        : '';
+      const r2Detail = data.r2Connected
+        ? 'R2 버킷 연결 테스트 성공'
+        : `R2 미연결${data.r2Error ? `: ${escHtml(data.r2Error).slice(0, 160)}` : ''}`;
       document.getElementById('adminStatusBox').innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
           <span>서버: <b>${escHtml(data.server)}</b></span>
@@ -2314,6 +2320,8 @@
           <span>자료: <b>${data.docs}개</b></span>
         </div>
         <div style="margin-top:8px">마지막 데이터 저장: ${escHtml(updated)}</div>
+        <div style="margin-top:8px;color:${storageColor}">${r2Detail}</div>
+        ${envLabels ? `<div style="margin-top:8px;font-size:0.78rem">${escHtml(envLabels)}</div>` : ''}
       `;
       lucide.createIcons();
     } catch { toast('운영 상태를 불러오지 못했습니다.', 'error'); }

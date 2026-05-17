@@ -57,16 +57,18 @@ def check_password(pw, stored):
         return hash_password(pw) == stored
     return pw == stored
 
-# ── 데이터 파일 초기화 ──
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "w") as f:
-        json.dump({"works": [], "sessions": {}, "adminPassword": hash_password("admin1234")}, f)
-
 # ── Cloudflare R2 클라이언트 ──
-R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "")
-R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY_ID", "")
-R2_SECRET     = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_BUCKET     = os.environ.get("R2_BUCKET_NAME", "wallpaper-contest")
+def env_first(*names, default=""):
+    for name in names:
+        val = os.environ.get(name, "").strip()
+        if val:
+            return val
+    return default
+
+R2_ACCOUNT_ID = env_first("R2_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID")
+R2_ACCESS_KEY = env_first("R2_ACCESS_KEY_ID", "R2_ACCESS_KEY")
+R2_SECRET     = env_first("R2_SECRET_ACCESS_KEY", "R2_SECRET_KEY")
+R2_BUCKET     = env_first("R2_BUCKET_NAME", "R2_BUCKET", default="wallpaper-contest")
 
 _r2 = None
 
@@ -129,9 +131,40 @@ def r2_list(prefix):
 def r2_configured():
     return bool(_get_r2())
 
+def r2_env_status():
+    return {
+        "R2_ACCOUNT_ID": bool(R2_ACCOUNT_ID),
+        "R2_ACCESS_KEY_ID": bool(R2_ACCESS_KEY),
+        "R2_SECRET_ACCESS_KEY": bool(R2_SECRET),
+        "R2_BUCKET_NAME": bool(R2_BUCKET),
+    }
+
+def r2_health():
+    r2 = _get_r2()
+    if not r2:
+        return False, "환경변수 또는 boto3 미설정"
+    try:
+        r2.list_objects_v2(Bucket=R2_BUCKET, MaxKeys=1)
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+def init_data_file():
+    if os.path.exists(DATA_FILE):
+        return
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump({
+            "works": [],
+            "sessions": {},
+            "adminPassword": hash_password("admin1234")
+        }, f, ensure_ascii=False, indent=2)
+
 def sync_from_r2():
     """서버 시작 시 R2 → 로컬 동기화 (Railway 재시작 후 데이터 복원)"""
-    if not _get_r2():
+    ok, err = r2_health()
+    if not ok:
+        if _get_r2():
+            print(f"[R2] 연결 테스트 실패: {err}")
         return
     print("[R2] 데이터 동기화 시작...")
 
@@ -417,17 +450,21 @@ class Handler(BaseHTTPRequestHandler):
             data = load_data()
             if not is_admin_request(self, data): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
             r2 = _get_r2()
+            r2_ok, r2_error = r2_health()
             data_mtime = os.path.getmtime(DATA_FILE) if os.path.exists(DATA_FILE) else None
             self.send_json({
                 "server": "python",
-                "storageMode": "r2" if r2 else "local",
-                "r2Connected": bool(r2),
+                "storageMode": "r2" if r2_ok else "local",
+                "r2Configured": bool(r2),
+                "r2Connected": bool(r2_ok),
+                "r2Error": r2_error,
                 "works": len(data.get("works", [])),
                 "voters": len(data.get("sessions", {})),
                 "docs": len([f for f in os.listdir(DOCS_DIR) if os.path.isfile(os.path.join(DOCS_DIR, f))]) if os.path.isdir(DOCS_DIR) else 0,
                 "uploads": len([f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]) if os.path.isdir(UPLOAD_DIR) else 0,
                 "dataUpdatedAt": datetime.fromtimestamp(data_mtime, timezone.utc).isoformat() if data_mtime else None,
                 "requiredEnv": ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"],
+                "envPresent": r2_env_status(),
             }); return
 
         if path == "/api/admin/sessions":
@@ -720,12 +757,14 @@ def get_local_ip():
 
 
 if __name__ == "__main__":
-    migrate_data()
     sync_from_r2()
+    init_data_file()
+    migrate_data()
 
     server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     local_ip = get_local_ip()
-    r2_status = "연결됨" if _get_r2() else "미설정 (로컬 모드)"
+    r2_ok, r2_error = r2_health()
+    r2_status = "연결됨" if r2_ok else f"미연결 ({r2_error})"
 
     print()
     print("==========================================")
