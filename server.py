@@ -88,11 +88,13 @@ def _get_r2():
 def r2_upload(key, data, content_type="application/octet-stream"):
     r2 = _get_r2()
     if not r2:
-        return
+        return False
     try:
         r2.put_object(Bucket=R2_BUCKET, Key=key, Body=data, ContentType=content_type)
+        return True
     except Exception as e:
         print(f"[R2 업로드 오류] {key}: {e}")
+        return False
 
 def r2_download(key):
     r2 = _get_r2()
@@ -107,11 +109,12 @@ def r2_download(key):
 def r2_delete(key):
     r2 = _get_r2()
     if not r2:
-        return
+        return False
     try:
         r2.delete_object(Bucket=R2_BUCKET, Key=key)
+        return True
     except Exception:
-        pass
+        return False
 
 def r2_list(prefix):
     r2 = _get_r2()
@@ -122,6 +125,9 @@ def r2_list(prefix):
         return [o["Key"] for o in resp.get("Contents", [])]
     except Exception:
         return []
+
+def r2_configured():
+    return bool(_get_r2())
 
 def sync_from_r2():
     """서버 시작 시 R2 → 로컬 동기화 (Railway 재시작 후 데이터 복원)"""
@@ -179,9 +185,9 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    # R2 백업 (비동기)
+    # R2 백업. 데이터 파일은 작아서 즉시 저장 성공 여부를 확인한다.
     raw = json.dumps(data, ensure_ascii=False, indent=2).encode()
-    threading.Thread(target=r2_upload, args=("data.json", raw, "application/json"), daemon=True).start()
+    r2_upload("data.json", raw, "application/json")
 
 def modify_data(fn):
     with data_lock:
@@ -421,6 +427,7 @@ class Handler(BaseHTTPRequestHandler):
                 "docs": len([f for f in os.listdir(DOCS_DIR) if os.path.isfile(os.path.join(DOCS_DIR, f))]) if os.path.isdir(DOCS_DIR) else 0,
                 "uploads": len([f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]) if os.path.isdir(UPLOAD_DIR) else 0,
                 "dataUpdatedAt": datetime.fromtimestamp(data_mtime, timezone.utc).isoformat() if data_mtime else None,
+                "requiredEnv": ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"],
             }); return
 
         if path == "/api/admin/sessions":
@@ -527,10 +534,12 @@ class Handler(BaseHTTPRequestHandler):
             if len(file_data) > 30 * 1024 * 1024: self.send_error_json("파일 크기는 30MB 이하여야 합니다."); return
             fname = str(uuid.uuid4()) + ext
             with open(os.path.join(UPLOAD_DIR, fname), "wb") as f: f.write(file_data)
-            # R2 비동기 업로드
-            threading.Thread(target=r2_upload,
-                             args=(f"uploads/{fname}", file_data, f"image/{ext[1:]}"),
-                             daemon=True).start()
+            if r2_configured():
+                ok = r2_upload(f"uploads/{fname}", file_data, f"image/{ext[1:]}")
+                if not ok:
+                    try: os.remove(os.path.join(UPLOAD_DIR, fname))
+                    except Exception: pass
+                    self.send_error_json("R2 백업 저장에 실패했습니다. Render 환경변수와 R2 권한을 확인해주세요.", 500); return
             work = {"id": str(uuid.uuid4()), "author": author,
                     "title": title if title else f"{author}의 웰페이퍼",
                     "filename": fname, "uploaderNickname": uploader_nick,
@@ -610,7 +619,15 @@ class Handler(BaseHTTPRequestHandler):
             safe = "".join(c if c.isalnum() or c in "._- " else "_" for c in os.path.splitext(file_name)[0])[:60]
             saved = str(uuid.uuid4())[:8] + "_" + safe + ext.lower()
             with open(os.path.join(DOCS_DIR, saved), "wb") as f: f.write(file_data)
-            threading.Thread(target=r2_upload, args=(f"docs/{saved}", file_data), daemon=True).start()
+            if not r2_configured():
+                try: os.remove(os.path.join(DOCS_DIR, saved))
+                except Exception: pass
+                self.send_error_json("R2 백업이 연결되지 않아 자료를 저장하지 않았습니다. Render 환경변수 4개를 확인해주세요.", 500); return
+            ok = r2_upload(f"docs/{saved}", file_data)
+            if not ok:
+                try: os.remove(os.path.join(DOCS_DIR, saved))
+                except Exception: pass
+                self.send_error_json("R2 백업 저장에 실패했습니다. 자료가 사라지지 않도록 업로드를 취소했습니다.", 500); return
             display = saved[9:] if len(saved) > 9 and saved[8] == "_" else saved
             self.send_json({"success": True, "filename": saved, "displayName": display}); return
 
