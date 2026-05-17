@@ -68,6 +68,7 @@ R2_ACCOUNT_ID = env_first("R2_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID")
 R2_ACCESS_KEY = env_first("R2_ACCESS_KEY_ID", "R2_ACCESS_KEY")
 R2_SECRET     = env_first("R2_SECRET_ACCESS_KEY", "R2_SECRET_KEY")
 R2_BUCKET     = env_first("R2_BUCKET_NAME", "R2_BUCKET", default="wallpaper-contest")
+_r2_last_error = ""
 
 def _get_r2():
     return all([R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET, R2_BUCKET])
@@ -153,12 +154,16 @@ def _r2_request(method, key="", data=b"", content_type="application/octet-stream
         return None, str(e).encode("utf-8")
 
 def r2_upload(key, data, content_type="application/octet-stream"):
+    global _r2_last_error
     if not _get_r2():
+        _r2_last_error = "R2 환경변수가 부족합니다."
         return False
     status, body = _r2_request("PUT", key=key, data=data, content_type=content_type)
     if status in [200, 201]:
+        _r2_last_error = ""
         return True
-    print(f"[R2 업로드 오류] {key}: {status} {body[:300]!r}")
+    _r2_last_error = f"{status} {body[:500].decode('utf-8', errors='replace')}"
+    print(f"[R2 업로드 오류] {key}: {_r2_last_error}")
     return False
 
 def r2_download(key):
@@ -538,6 +543,17 @@ class Handler(BaseHTTPRequestHandler):
                 "effectiveConfig": r2_effective_status(),
             }); return
 
+        if path == "/api/admin/r2-test":
+            if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
+            data = load_data()
+            if not is_admin_request(self, data): self.send_error_json("비밀번호가 틀렸습니다.", 403); return
+            test_key = "_healthcheck/render-r2-test.txt"
+            ok = r2_upload(test_key, b"ok", "text/plain")
+            if not ok:
+                self.send_json({"success": False, "error": _r2_last_error}, 500); return
+            r2_delete(test_key)
+            self.send_json({"success": True}); return
+
         if path == "/api/admin/sessions":
             if not check_rate_limit(ip, "admin", 20, 60): self.send_error_json("요청이 너무 많습니다.", 429); return
             pw = self.headers.get("X-Admin-Password", "")
@@ -647,7 +663,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not ok:
                     try: os.remove(os.path.join(UPLOAD_DIR, fname))
                     except Exception: pass
-                    self.send_error_json("R2 백업 저장에 실패했습니다. Render 환경변수와 R2 권한을 확인해주세요.", 500); return
+                    self.send_error_json(f"R2 백업 저장에 실패했습니다: {_r2_last_error}", 500); return
             work = {"id": str(uuid.uuid4()), "author": author,
                     "title": title if title else f"{author}의 웰페이퍼",
                     "filename": fname, "uploaderNickname": uploader_nick,
@@ -735,7 +751,7 @@ class Handler(BaseHTTPRequestHandler):
             if not ok:
                 try: os.remove(os.path.join(DOCS_DIR, saved))
                 except Exception: pass
-                self.send_error_json("R2 백업 저장에 실패했습니다. 자료가 사라지지 않도록 업로드를 취소했습니다.", 500); return
+                self.send_error_json(f"R2 백업 저장에 실패했습니다. 자료가 사라지지 않도록 업로드를 취소했습니다: {_r2_last_error}", 500); return
             display = saved[9:] if len(saved) > 9 and saved[8] == "_" else saved
             self.send_json({"success": True, "filename": saved, "displayName": display}); return
 

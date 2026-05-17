@@ -1348,6 +1348,9 @@
         <button class="btn-verify" onclick="loadAdminStatus()" style="margin-bottom:18px">
           <i data-lucide="refresh-cw"></i>상태 새로고침
         </button>
+        <button class="btn-verify" onclick="testR2Write()" style="margin-bottom:18px">
+          <i data-lucide="cloud"></i>R2 쓰기 테스트
+        </button>
 
         <div class="admin-divider"></div>
 
@@ -2334,6 +2337,21 @@
   function onBackupFileChange(input) {
     document.getElementById('backupFileName').textContent =
       input.files[0] ? input.files[0].name : '선택된 파일 없음';
+  }
+
+  async function testR2Write() {
+    try {
+      const res = await fetch('/api/admin/r2-test', {
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast(data.error || 'R2 쓰기 테스트 실패', 'error');
+        return;
+      }
+      toast('R2 쓰기 테스트 성공', 'success');
+      await loadAdminStatus();
+    } catch { toast('R2 쓰기 테스트 중 오류가 발생했습니다.', 'error'); }
   }
 
   async function importData() {
