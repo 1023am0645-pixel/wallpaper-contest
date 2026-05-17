@@ -65,6 +65,9 @@ def env_first(*names, default=""):
             return val
     return default
 
+def env_present(*names):
+    return any(bool(os.environ.get(name, "").strip()) for name in names)
+
 R2_ACCOUNT_ID = env_first("R2_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID")
 R2_ACCESS_KEY = env_first("R2_ACCESS_KEY_ID", "R2_ACCESS_KEY")
 R2_SECRET     = env_first("R2_SECRET_ACCESS_KEY", "R2_SECRET_KEY")
@@ -133,10 +136,18 @@ def r2_configured():
 
 def r2_env_status():
     return {
-        "R2_ACCOUNT_ID": bool(R2_ACCOUNT_ID),
-        "R2_ACCESS_KEY_ID": bool(R2_ACCESS_KEY),
-        "R2_SECRET_ACCESS_KEY": bool(R2_SECRET),
-        "R2_BUCKET_NAME": bool(R2_BUCKET),
+        "R2_ACCOUNT_ID": env_present("R2_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID"),
+        "R2_ACCESS_KEY_ID": env_present("R2_ACCESS_KEY_ID", "R2_ACCESS_KEY"),
+        "R2_SECRET_ACCESS_KEY": env_present("R2_SECRET_ACCESS_KEY", "R2_SECRET_KEY"),
+        "R2_BUCKET_NAME": env_present("R2_BUCKET_NAME", "R2_BUCKET"),
+    }
+
+def r2_effective_status():
+    return {
+        "accountId": bool(R2_ACCOUNT_ID),
+        "accessKey": bool(R2_ACCESS_KEY),
+        "secretKey": bool(R2_SECRET),
+        "bucketName": bool(R2_BUCKET),
     }
 
 def r2_health():
@@ -465,6 +476,7 @@ class Handler(BaseHTTPRequestHandler):
                 "dataUpdatedAt": datetime.fromtimestamp(data_mtime, timezone.utc).isoformat() if data_mtime else None,
                 "requiredEnv": ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"],
                 "envPresent": r2_env_status(),
+                "effectiveConfig": r2_effective_status(),
             }); return
 
         if path == "/api/admin/sessions":

@@ -2305,7 +2305,10 @@
       const storage = data.r2Connected ? 'R2 백업 연결됨' : '로컬 저장만 사용 중';
       const storageColor = data.r2Connected ? 'var(--success)' : 'var(--danger)';
       const envLabels = data.envPresent
-        ? Object.entries(data.envPresent).map(([k, v]) => `${k}: ${v ? '있음' : '없음'}`).join(' · ')
+        ? Object.entries(data.envPresent).map(([k, v]) => `${k}: ${v ? '실제 있음' : '실제 없음'}`).join(' · ')
+        : '';
+      const effectiveLabels = data.effectiveConfig
+        ? Object.entries(data.effectiveConfig).map(([k, v]) => `${k}: ${v ? '사용 가능' : '사용 불가'}`).join(' · ')
         : '';
       const r2Detail = data.r2Connected
         ? 'R2 버킷 연결 테스트 성공'
@@ -2321,7 +2324,8 @@
         </div>
         <div style="margin-top:8px">마지막 데이터 저장: ${escHtml(updated)}</div>
         <div style="margin-top:8px;color:${storageColor}">${r2Detail}</div>
-        ${envLabels ? `<div style="margin-top:8px;font-size:0.78rem">${escHtml(envLabels)}</div>` : ''}
+        ${envLabels ? `<div style="margin-top:8px;font-size:0.78rem">Render 실제 환경변수: ${escHtml(envLabels)}</div>` : ''}
+        ${effectiveLabels ? `<div style="margin-top:4px;font-size:0.78rem">서버 사용 설정: ${escHtml(effectiveLabels)}</div>` : ''}
       `;
       lucide.createIcons();
     } catch { toast('운영 상태를 불러오지 못했습니다.', 'error'); }
