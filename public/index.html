@@ -1477,6 +1477,30 @@
   function getSessionToken() { return localStorage.getItem('sessionToken') || ''; }
   function getNickname()     { return localStorage.getItem('nickname') || ''; }
 
+  async function reloginFromSavedNickname() {
+    const nickname = getNickname();
+    if (!nickname) return false;
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname })
+      });
+      const data = await res.json();
+      if (!res.ok) return false;
+      localStorage.setItem('sessionToken', data.sessionToken);
+      voterName = nickname;
+      myVotes = data.myVotes || [];
+      document.getElementById('voterNameDisplay').textContent = nickname;
+      document.getElementById('uploadAuthor').value = nickname;
+      document.getElementById('loginOverlay').style.display = 'none';
+      updateVoteBadge();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // ── 로그인 ──
   async function doLogin() {
     const nickname = document.getElementById('loginInput').value.trim();
@@ -2090,6 +2114,10 @@
     const workId = _pendingVoteId;
     closeConfirm();
     if (!workId) return;
+    await submitVote(workId, true);
+  }
+
+  async function submitVote(workId, allowRelogin) {
     const work = works.find(w => w.id === workId);
     try {
       const res = await fetch('/api/vote', {
@@ -2101,7 +2129,12 @@
         body: JSON.stringify({ workId })
       });
       const data = await res.json();
-      if (!res.ok) { toast(data.error, 'error'); return; }
+      if (!res.ok) {
+        if (res.status === 401 && allowRelogin && await reloginFromSavedNickname()) {
+          return submitVote(workId, false);
+        }
+        toast(data.error, 'error'); return;
+      }
 
       myVotes = data.myVotes;
       updateVoteBadge();
@@ -2152,7 +2185,12 @@
         body: fd
       });
       const data = await res.json();
-      if (!res.ok) { toast(data.error, 'error'); return; }
+      if (!res.ok) {
+        if (res.status === 401 && await reloginFromSavedNickname()) {
+          return handleUpload(e);
+        }
+        toast(data.error, 'error'); return;
+      }
 
       toast('작품이 업로드됐습니다! 🎉', 'success');
       document.getElementById('uploadForm').reset();

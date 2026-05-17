@@ -297,12 +297,27 @@ def save_data(data):
     raw = json.dumps(data, ensure_ascii=False, indent=2).encode()
     r2_upload("data.json", raw, "application/json")
 
+def save_data_checked(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    if r2_configured():
+        raw = json.dumps(data, ensure_ascii=False, indent=2).encode()
+        return r2_upload("data.json", raw, "application/json")
+    return True
+
 def modify_data(fn):
     with data_lock:
         data = load_data()
         result = fn(data)
         save_data(data)
         return result
+
+def modify_data_checked(fn):
+    with data_lock:
+        data = load_data()
+        result = fn(data)
+        ok = save_data_checked(data)
+        return result, ok
 
 # ── 세션 헬퍼 ──
 def get_nickname_by_token(data, session_token):
@@ -668,7 +683,12 @@ class Handler(BaseHTTPRequestHandler):
                     "title": title if title else f"{author}의 웰페이퍼",
                     "filename": fname, "uploaderNickname": uploader_nick,
                     "uploadedAt": datetime.now(timezone.utc).isoformat()}
-            modify_data(lambda d: d["works"].append(work))
+            _, data_ok = modify_data_checked(lambda d: d["works"].append(work))
+            if not data_ok:
+                try: os.remove(os.path.join(UPLOAD_DIR, fname))
+                except Exception: pass
+                r2_delete(f"uploads/{fname}")
+                self.send_error_json(f"작품 정보 저장에 실패했습니다: {_r2_last_error}", 500); return
             self.send_json({"success": True, "work": work}); return
 
         if path == "/api/vote":
