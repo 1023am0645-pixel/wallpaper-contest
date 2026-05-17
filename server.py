@@ -153,7 +153,18 @@ def r2_effective_status():
 def r2_health():
     r2 = _get_r2()
     if not r2:
-        return False, "환경변수 또는 boto3 미설정"
+        missing = []
+        if not _BOTO3:
+            missing.append("boto3 미설치")
+        if not R2_ACCOUNT_ID:
+            missing.append("R2_ACCOUNT_ID 없음")
+        if not R2_ACCESS_KEY:
+            missing.append("R2_ACCESS_KEY_ID 없음")
+        if not R2_SECRET:
+            missing.append("R2_SECRET_ACCESS_KEY 없음")
+        if not R2_BUCKET:
+            missing.append("R2_BUCKET_NAME 없음")
+        return False, ", ".join(missing) or "R2 설정 미확인"
     try:
         r2.list_objects_v2(Bucket=R2_BUCKET, MaxKeys=1)
         return True, ""
