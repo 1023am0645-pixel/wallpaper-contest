@@ -858,7 +858,8 @@ class Handler(BaseHTTPRequestHandler):
             if not os.path.isfile(fpath): self.send_error_json("파일을 찾을 수 없습니다.", 404); return
             try: os.remove(fpath)
             except Exception: pass
-            threading.Thread(target=r2_delete, args=(f"docs/{fname}",), daemon=True).start()
+            if r2_configured() and not r2_delete(f"docs/{fname}"):
+                self.send_error_json("로컬 자료는 삭제했지만 R2 백업 삭제에 실패했습니다. 새로고침 후 다시 확인해주세요.", 500); return
             self.send_json({"success": True}); return
 
         if path.startswith("/api/admin/work/"):

@@ -2564,6 +2564,11 @@
     const input = document.getElementById('docFileInput');
     const btn = document.getElementById('docUploadBtn');
     if (!input.files[0]) { toast('파일을 선택해주세요.', 'error'); return; }
+    if (!isAdmin || !adminPassword) {
+      toast('관리자 인증 후 업로드할 수 있습니다.', 'error');
+      showSection('admin');
+      return;
+    }
 
     const fd = new FormData();
     fd.append('file', input.files[0]);
@@ -2577,7 +2582,10 @@
         body: fd
       });
       const data = await res.json();
-      if (!res.ok) { toast(data.error, 'error'); return; }
+      if (!res.ok) {
+        toast(data.error || `업로드 실패 (${res.status})`, 'error');
+        return;
+      }
       toast(`"${data.displayName}" 업로드 완료!`, 'success');
       input.value = '';
       document.getElementById('docFileName').textContent = '파일을 선택하세요';
@@ -2591,6 +2599,11 @@
   }
 
   async function deleteDoc(filename) {
+    if (!isAdmin || !adminPassword) {
+      toast('관리자 인증 후 삭제할 수 있습니다.', 'error');
+      showSection('admin');
+      return;
+    }
     if (!confirm('이 자료를 삭제하시겠습니까?')) return;
     try {
       const res = await fetch(`/api/admin/docs/${encodeURIComponent(filename)}`, {
@@ -2599,7 +2612,10 @@
         body: JSON.stringify({ password: adminPassword })
       });
       const data = await res.json();
-      if (!res.ok) { toast(data.error, 'error'); return; }
+      if (!res.ok) {
+        toast(data.error || `삭제 실패 (${res.status})`, 'error');
+        return;
+      }
       toast('자료가 삭제됐습니다.', 'success');
       await loadDocs();
     } catch { toast('오류가 발생했습니다.', 'error'); }
