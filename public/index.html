@@ -396,29 +396,6 @@
       backdrop-filter: blur(4px);
     }
     .work-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(124,58,237,0.18); }
-    .work-card.rank-1 { border-color: var(--gold); box-shadow: 0 0 20px rgba(245,158,11,0.15); }
-    .work-card.rank-2 { border-color: var(--silver); box-shadow: 0 0 20px rgba(148,163,184,0.12); }
-    .work-card.rank-3 { border-color: var(--bronze); box-shadow: 0 0 20px rgba(205,124,63,0.12); }
-
-    .rank-badge {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      font-weight: 800;
-      z-index: 2;
-      backdrop-filter: blur(8px);
-    }
-    .rank-1 .rank-badge { background: rgba(245,158,11,0.9); color: #fff; }
-    .rank-2 .rank-badge { background: rgba(148,163,184,0.9); color: #fff; }
-    .rank-3 .rank-badge { background: rgba(205,124,63,0.9); color: #fff; }
-
     .admin-delete-btn {
       position: absolute;
       top: 10px;
@@ -2059,18 +2036,14 @@
       return;
     }
 
-    grid.innerHTML = works.map((w, i) => {
-      const rank = i + 1;
+    grid.innerHTML = works.map((w) => {
       const voted = myVotes.includes(w.id);
-      const rankClass = rank <= 3 ? ` rank-${rank}` : '';
-      const rankBadge = rank <= 3 ? `<div class="rank-badge">${['🥇','🥈','🥉'][rank-1]}</div>` : '';
       const adminDeleteBtn = isAdmin
         ? `<button class="admin-delete-btn" onclick="adminDeleteWork('${w.id}', event)" title="삭제"><i data-lucide="trash-2"></i></button>`
         : '';
 
       return `
-        <div class="work-card${rankClass}" data-id="${w.id}">
-          ${rankBadge}
+        <div class="work-card" data-id="${w.id}">
           ${adminDeleteBtn}
           <div class="work-img-wrap" onclick="openLightbox('/uploads/${w.filename}')">
             <img src="/uploads/${w.filename}" alt="${escHtml(w.title)}" loading="lazy" />

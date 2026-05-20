@@ -481,7 +481,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/works":
             data = load_data()
             result = [{**w, "voteCount": get_vote_count(data, w["id"])} for w in data["works"]]
-            result.sort(key=lambda x: (-x["voteCount"], x.get("uploadedAt", "")))
+            result.sort(key=lambda x: x.get("uploadedAt", ""))
             self.send_json(result); return
 
         if path == "/api/votes/me":
