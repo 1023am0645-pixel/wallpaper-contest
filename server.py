@@ -37,7 +37,7 @@ MIME_TYPES = {
     ".ico":  "image/x-icon",
 }
 ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
-ALLOWED_DOC_EXTS   = {".hwp", ".hwpx", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip", ".md"}
+ALLOWED_DOC_EXTS   = {".hwp", ".hwpx", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip", ".md", ".html", ".htm"}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(DOCS_DIR,   exist_ok=True)
@@ -531,6 +531,29 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Disposition",
                              f"attachment; filename*=UTF-8''{quote(display)}")
+            self.send_header("Content-Length", len(body))
+            self.end_headers()
+            self.wfile.write(body); return
+
+        if path.startswith("/api/docs/view/"):
+            fname = os.path.basename(unquote(path[len("/api/docs/view/"):]))
+            fpath = os.path.join(DOCS_DIR, fname)
+            if not os.path.isfile(fpath):
+                self.send_error_json("파일을 찾을 수 없습니다.", 404); return
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in {".html", ".htm", ".pdf", ".txt"}:
+                self.send_error_json("미리보기를 지원하지 않는 파일입니다.", 400); return
+            mime = {
+                ".html": "text/html; charset=utf-8",
+                ".htm": "text/html; charset=utf-8",
+                ".pdf": "application/pdf",
+                ".txt": "text/plain; charset=utf-8",
+            }.get(ext, "application/octet-stream")
+            with open(fpath, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Disposition", "inline")
             self.send_header("Content-Length", len(body))
             self.end_headers()
             self.wfile.write(body); return

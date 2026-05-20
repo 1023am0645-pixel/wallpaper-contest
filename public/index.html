@@ -1197,7 +1197,7 @@
       </button>
       <button class="nav-btn" onclick="showSection('docs')">
         <i data-lucide="download"></i>
-        <span class="nav-label">자료 다운로드</span>
+        <span class="nav-label">자료실</span>
       </button>
       <button class="nav-btn" onclick="showSection('admin')" style="max-width:56px;opacity:0.55">
         <i data-lucide="shield"></i>
@@ -1284,10 +1284,10 @@
     </div>
   </section>
 
-  <!-- 자료 다운로드 -->
+  <!-- 자료실 -->
   <section class="section" id="sec-docs">
     <div class="docs-header">
-      <h2><i data-lucide="download"></i>자료 다운로드</h2>
+      <h2><i data-lucide="download"></i>자료실</h2>
     </div>
 
     <!-- 어드민 자료 업로드 (관리자 인증 후 표시) -->
@@ -1296,8 +1296,8 @@
       <div class="doc-upload-row">
         <label class="doc-file-input-label">
           <i data-lucide="file-plus"></i>
-          <span id="docFileName">파일을 선택하세요 (HWP, PDF, DOCX, PPTX 등)</span>
-          <input type="file" id="docFileInput" accept=".hwp,.hwpx,.pdf,.doc,.docx,.ppt,.pptx,.txt,.zip" onchange="onDocFileChange(this)" />
+          <span id="docFileName">파일을 선택하세요 (HWP, PDF, HTML 등)</span>
+          <input type="file" id="docFileInput" accept=".hwp,.hwpx,.pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.html,.htm" onchange="onDocFileChange(this)" />
         </label>
         <button class="btn-doc-upload" id="docUploadBtn" onclick="uploadDoc()">
           <i data-lucide="upload"></i>업로드
@@ -2507,7 +2507,7 @@
     if (name === 'docs') loadDocs();
   }
 
-  // ── 자료 다운로드 ──
+  // ── 자료실 ──
   async function loadDocs() {
     try {
       const res = await fetch('/api/docs');
@@ -2525,10 +2525,16 @@
 
     list.innerHTML = docs.map(d => {
       const ext = d.displayName.split('.').pop().toLowerCase();
-      const iconMap = { hwp: 'file-text', hwpx: 'file-text', pdf: 'file-type', doc: 'file-text', docx: 'file-text', ppt: 'presentation', pptx: 'presentation', zip: 'archive', txt: 'file-code' };
+      const iconMap = { hwp: 'file-text', hwpx: 'file-text', pdf: 'file-type', doc: 'file-text', docx: 'file-text', ppt: 'presentation', pptx: 'presentation', zip: 'archive', txt: 'file-code', html: 'globe-2', htm: 'globe-2' };
       const icon = iconMap[ext] || 'file';
       const size = d.size > 1024*1024 ? (d.size/1024/1024).toFixed(1)+'MB' : Math.round(d.size/1024)+'KB';
       const date = new Date(d.uploadedAt).toLocaleDateString('ko-KR');
+      const canView = ['html', 'htm', 'pdf', 'txt'].includes(ext);
+      const viewBtn = canView
+        ? `<a href="/api/docs/view/${encodeURIComponent(d.filename)}" class="btn-download" target="_blank" rel="noopener">
+            <i data-lucide="external-link"></i>보기
+          </a>`
+        : '';
       const deleteBtn = isAdmin
         ? `<button class="btn-doc-delete" onclick="deleteDoc('${escHtml(d.filename)}')" title="삭제"><i data-lucide="trash-2"></i></button>`
         : '';
@@ -2539,6 +2545,7 @@
             <div class="doc-name" title="${escHtml(d.displayName)}">${escHtml(d.displayName)}</div>
             <div class="doc-meta">${size} · ${date}</div>
           </div>
+          ${viewBtn}
           <a href="/api/docs/download/${encodeURIComponent(d.filename)}" class="btn-download" download>
             <i data-lucide="download"></i>다운로드
           </a>
