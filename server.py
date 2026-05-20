@@ -853,7 +853,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"success": True}); return
 
         if path.startswith("/api/admin/docs/"):
-            fname = os.path.basename(path[len("/api/admin/docs/"):])
+            fname = os.path.basename(unquote(path[len("/api/admin/docs/"):]))
             fpath = os.path.join(DOCS_DIR, fname)
             if not os.path.isfile(fpath): self.send_error_json("파일을 찾을 수 없습니다.", 404); return
             try: os.remove(fpath)
