@@ -39,6 +39,8 @@ MIME_TYPES = {
 }
 ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 ALLOWED_DOC_EXTS   = {".hwp", ".hwpx", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip", ".md", ".html", ".htm"}
+DOC_UPLOAD_LIMIT_MB = 150
+DOC_UPLOAD_LIMIT_BYTES = DOC_UPLOAD_LIMIT_MB * 1024 * 1024
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(DOCS_DIR,   exist_ok=True)
@@ -817,7 +819,8 @@ class Handler(BaseHTTPRequestHandler):
             ct = self.headers.get("Content-Type", "")
             fields, file_data, file_name, _ = parse_multipart(ct, body)
             if file_data is None or not file_name: self.send_error_json("파일이 없습니다."); return
-            if len(file_data) > 50 * 1024 * 1024: self.send_error_json("파일 크기는 50MB 이하여야 합니다."); return
+            if len(file_data) > DOC_UPLOAD_LIMIT_BYTES:
+                self.send_error_json(f"파일 크기는 {DOC_UPLOAD_LIMIT_MB}MB 이하여야 합니다."); return
             _, ext = os.path.splitext(file_name)
             if ext.lower() not in ALLOWED_DOC_EXTS: self.send_error_json("허용되지 않는 파일 형식입니다."); return
             safe = "".join(c if c.isalnum() or c in "._- " else "_" for c in os.path.splitext(file_name)[0])[:60]
