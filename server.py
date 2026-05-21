@@ -33,6 +33,7 @@ MIME_TYPES = {
     ".jpeg": "image/jpeg",
     ".gif":  "image/gif",
     ".webp": "image/webp",
+    ".bmp":  "image/bmp",
     ".svg":  "image/svg+xml",
     ".ico":  "image/x-icon",
 }
@@ -381,6 +382,14 @@ def check_rate_limit(ip, endpoint, max_req, window_sec):
 def sanitize(val, max_len=100):
     return str(val or "").strip()[:max_len]
 
+def safe_download_name(work):
+    ext = os.path.splitext(work.get("filename", ""))[1].lower()
+    if ext not in ALLOWED_IMAGE_EXTS:
+        ext = ".jpg"
+    raw = f"{work.get('author', '')}_{work.get('title', '')}".strip(" _")
+    cleaned = "".join("_" if ch in '\\/:*?"<>|\r\n\t' else ch for ch in raw).strip(" ._")
+    return (cleaned[:80] or "wallpaper") + ext
+
 def get_vote_count(data, work_id):
     return sum(1 for s in data.get("sessions", {}).values() if work_id in s.get("votes", []))
 
@@ -474,6 +483,34 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", mime)
             self.send_header("Content-Length", len(body))
             self.send_header("Cache-Control", "public, max-age=3600")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if path.startswith("/api/works/download/"):
+            work_id = unquote(path[len("/api/works/download/"):]).strip()
+            data = load_data()
+            work = next((w for w in data.get("works", []) if w.get("id") == work_id), None)
+            if not work:
+                self.send_error_json("작품을 찾을 수 없습니다.", 404); return
+            fname = os.path.basename(work.get("filename", ""))
+            fpath = os.path.join(UPLOAD_DIR, fname)
+            body = None
+            if os.path.isfile(fpath):
+                with open(fpath, "rb") as f:
+                    body = f.read()
+            elif r2_configured():
+                body = r2_download(f"uploads/{fname}")
+            if body is None:
+                self.send_error_json("이미지 파일을 찾을 수 없습니다.", 404); return
+            ext = os.path.splitext(fname)[1].lower()
+            mime = MIME_TYPES.get(ext, "application/octet-stream")
+            display = safe_download_name(work)
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Disposition",
+                             f"attachment; filename*=UTF-8''{quote(display)}")
+            self.send_header("Content-Length", len(body))
             self.end_headers()
             self.wfile.write(body)
             return
