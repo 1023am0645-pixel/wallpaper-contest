@@ -1337,6 +1337,9 @@
     <div class="gallery-header">
       <h2><i data-lucide="images"></i>작품 갤러리</h2>
       <span class="work-count" id="workCount">0개</span>
+      <button class="refresh-btn" id="selectAllWorksBtn" onclick="toggleSelectAllWorks()" disabled>
+        <i data-lucide="check-square"></i><span id="selectAllWorksLabel">전체선택</span>
+      </button>
       <button class="refresh-btn" onclick="loadWorks()">
         <i data-lucide="refresh-cw"></i>새로고침
       </button>
@@ -2245,10 +2248,23 @@
   function updateBulkDownloadButton() {
     const btn = document.getElementById('bulkDownloadBtn');
     const label = document.getElementById('bulkDownloadLabel');
+    const selectBtn = document.getElementById('selectAllWorksBtn');
+    const selectLabel = document.getElementById('selectAllWorksLabel');
     if (!btn || !label) return;
     const count = selectedWorkIds.size;
     btn.disabled = count === 0;
     label.textContent = count ? `선택 ${count}개 다운로드` : '선택 다운로드';
+    if (selectBtn && selectLabel) {
+      selectBtn.disabled = works.length === 0;
+      selectLabel.textContent = works.length && count === works.length ? '선택해제' : '전체선택';
+    }
+  }
+
+  function toggleSelectAllWorks() {
+    if (!works.length) return;
+    if (selectedWorkIds.size === works.length) selectedWorkIds.clear();
+    else selectedWorkIds = new Set(works.map(w => w.id));
+    renderGallery();
   }
 
   function downloadSelectedWorks() {
