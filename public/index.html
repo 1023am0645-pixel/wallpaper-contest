@@ -399,7 +399,7 @@
     .admin-delete-btn {
       position: absolute;
       top: 10px;
-      right: 10px;
+      left: 10px;
       width: 30px;
       height: 30px;
       border-radius: 50%;
@@ -425,11 +425,56 @@
       cursor: pointer;
       position: relative;
       display: block;
+      width: 100%;
+      border: none;
+      padding: 0;
       color: white;
       text-decoration: none;
     }
     .work-img-wrap img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.15s; }
     .work-img-wrap:hover img { transform: scale(1.03); }
+    .work-select-wrap {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 3;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.58);
+      border: 1px solid rgba(255,255,255,0.24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+    }
+    .work-select-wrap input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent2);
+      cursor: pointer;
+    }
+    .bulk-download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 9px 13px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(124,58,237,0.22);
+    }
+    .bulk-download-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .bulk-download-btn svg { width: 14px; height: 14px; }
     .work-download-hint {
       position: absolute;
       left: 10px;
@@ -757,7 +802,65 @@
       cursor: zoom-out;
     }
     .lightbox.open { display: flex; }
-    .lightbox img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 0 60px rgba(124,58,237,0.3); }
+    .lightbox-content {
+      width: min(1180px, 94vw);
+      height: min(92vh, 820px);
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      cursor: default;
+    }
+    .lightbox img { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 60px rgba(124,58,237,0.3); }
+    .lightbox-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: white;
+      background: rgba(10,10,18,0.72);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 14px;
+      padding: 12px 14px;
+      backdrop-filter: blur(12px);
+    }
+    .lightbox-title { font-weight: 900; font-size: 0.98rem; }
+    .lightbox-author { color: rgba(255,255,255,0.68); font-size: 0.82rem; margin-top: 2px; }
+    .lightbox-vote-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 15px;
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .lightbox-vote-btn.voted { background: linear-gradient(135deg,#ef4444,#f97316); }
+    .lightbox-vote-btn svg { width: 16px; height: 16px; }
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 64px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.2); }
+    .lightbox-prev { left: 18px; }
+    .lightbox-next { right: 18px; }
+    .lightbox-nav svg { width: 24px; height: 24px; }
 
     .lightbox-close {
       position: absolute;
@@ -1031,7 +1134,9 @@
       .upload-card { padding: 24px 18px; }
 
       /* 갤러리 */
+      .gallery-header { gap: 10px; }
       .gallery-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .bulk-download-btn { width: 100%; justify-content: center; }
       .work-info { padding: 10px 12px; }
       .work-title { font-size: 0.82rem; }
 
@@ -1050,6 +1155,12 @@
       .btn-download { width: 100%; justify-content: center; }
       .doc-upload-row { flex-direction: column; }
       .btn-doc-upload { width: 100%; justify-content: center; }
+      .lightbox-content { width: 100vw; height: 100vh; padding: 58px 10px 16px; }
+      .lightbox-panel { align-items: flex-start; flex-direction: column; margin: 0 6px; }
+      .lightbox-vote-btn { width: 100%; justify-content: center; }
+      .lightbox-nav { width: 38px; height: 54px; }
+      .lightbox-prev { left: 8px; }
+      .lightbox-next { right: 8px; }
     }
 
     /* 아주 작은 화면 */
@@ -1229,6 +1340,9 @@
       <button class="refresh-btn" onclick="loadWorks()">
         <i data-lucide="refresh-cw"></i>새로고침
       </button>
+      <button class="bulk-download-btn" id="bulkDownloadBtn" onclick="downloadSelectedWorks()" disabled>
+        <i data-lucide="download"></i><span id="bulkDownloadLabel">선택 다운로드</span>
+      </button>
     </div>
     <div class="gallery-grid" id="galleryGrid">
       <div class="empty-state" style="grid-column:1/-1">
@@ -1300,6 +1414,9 @@
   <section class="section" id="sec-docs">
     <div class="docs-header">
       <h2><i data-lucide="download"></i>자료실</h2>
+      <a class="refresh-btn" href="/pdf-tools.html" style="text-decoration:none">
+        <i data-lucide="file-output"></i>PDF 도구
+      </a>
     </div>
 
     <!-- 어드민 자료 업로드 (관리자 인증 후 표시) -->
@@ -1470,7 +1587,20 @@
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()"><i data-lucide="x"></i></button>
-  <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()" />
+  <button class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); moveLightbox(-1)" title="이전 작품"><i data-lucide="chevron-left"></i></button>
+  <div class="lightbox-content" onclick="event.stopPropagation()">
+    <img id="lightboxImg" src="" alt="" />
+    <div class="lightbox-panel">
+      <div>
+        <div class="lightbox-title" id="lightboxTitle"></div>
+        <div class="lightbox-author" id="lightboxAuthor"></div>
+      </div>
+      <button class="lightbox-vote-btn" id="lightboxVoteBtn" onclick="voteFromLightbox()">
+        <i data-lucide="heart"></i><span>투표하기</span>
+      </button>
+    </div>
+  </div>
+  <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); moveLightbox(1)" title="다음 작품"><i data-lucide="chevron-right"></i></button>
 </div>
 
 <!-- 토스트 -->
@@ -1484,6 +1614,8 @@
   let isAdmin = false;
   let votingEnded = false;
   let adminPassword = '';
+  let selectedWorkIds = new Set();
+  let lightboxIndex = -1;
 
   // ── 세션 헬퍼 ──
   function getSessionToken() { return localStorage.getItem('sessionToken') || ''; }
@@ -2058,6 +2190,7 @@
     try {
       const res = await fetch('/api/works');
       works = await res.json();
+      selectedWorkIds = new Set([...selectedWorkIds].filter(id => works.some(w => w.id === id)));
       document.getElementById('workCount').textContent = `${works.length}개`;
       renderGallery();
     } catch { toast('데이터를 불러오지 못했습니다.', 'error'); }
@@ -2067,12 +2200,14 @@
     const grid = document.getElementById('galleryGrid');
     if (!works.length) {
       grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><img src="/강이.png" alt="강이" class="char-img" onerror="this.style.display='none'"><p>아직 업로드된 작품이 없습니다</p></div>`;
+      updateBulkDownloadButton();
       lucide.createIcons();
       return;
     }
 
-    grid.innerHTML = works.map((w) => {
+    grid.innerHTML = works.map((w, index) => {
       const voted = myVotes.includes(w.id);
+      const checked = selectedWorkIds.has(w.id) ? 'checked' : '';
       const adminDeleteBtn = isAdmin
         ? `<button class="admin-delete-btn" onclick="adminDeleteWork('${w.id}', event)" title="삭제"><i data-lucide="trash-2"></i></button>`
         : '';
@@ -2080,10 +2215,12 @@
       return `
         <div class="work-card" data-id="${w.id}">
           ${adminDeleteBtn}
-          <a class="work-img-wrap" href="/api/works/download/${encodeURIComponent(w.id)}" download title="사진 다운로드">
+          <label class="work-select-wrap" title="다운로드할 작품 선택" onclick="event.stopPropagation()">
+            <input type="checkbox" ${checked} onchange="toggleWorkSelection('${w.id}', this.checked)" />
+          </label>
+          <button class="work-img-wrap" type="button" onclick="openLightbox(${index})" title="크게 보기">
             <img src="/uploads/${w.filename}" alt="${escHtml(w.title)}" loading="lazy" />
-            <span class="work-download-hint"><i data-lucide="download"></i>사진 다운로드</span>
-          </a>
+          </button>
           <div class="work-info">
             <div class="work-title" title="${escHtml(w.title)}">${escHtml(w.title)}</div>
             <div class="work-author"><i data-lucide="user-round"></i>by ${escHtml(w.author)}</div>
@@ -2095,7 +2232,32 @@
           </div>
         </div>`;
     }).join('');
+    updateBulkDownloadButton();
     lucide.createIcons();
+  }
+
+  function toggleWorkSelection(workId, checked) {
+    if (checked) selectedWorkIds.add(workId);
+    else selectedWorkIds.delete(workId);
+    updateBulkDownloadButton();
+  }
+
+  function updateBulkDownloadButton() {
+    const btn = document.getElementById('bulkDownloadBtn');
+    const label = document.getElementById('bulkDownloadLabel');
+    if (!btn || !label) return;
+    const count = selectedWorkIds.size;
+    btn.disabled = count === 0;
+    label.textContent = count ? `선택 ${count}개 다운로드` : '선택 다운로드';
+  }
+
+  function downloadSelectedWorks() {
+    const ids = [...selectedWorkIds];
+    if (!ids.length) {
+      toast('다운로드할 작품을 체크해주세요.', 'error');
+      return;
+    }
+    location.href = `/api/works/download-selected?ids=${encodeURIComponent(ids.join(','))}`;
   }
 
   // ── 투표 ──
@@ -2148,6 +2310,7 @@
       myVotes = data.myVotes;
       updateVoteBadge();
       await loadWorks();
+      if (document.getElementById('lightbox').classList.contains('open')) updateLightbox();
 
       if (data.action === 'added') toast(`"${work?.title || '작품'}"에 투표했어요! (${myVotes.length}/2)`, 'success');
       else toast('투표를 취소했습니다.', '');
@@ -2635,13 +2798,55 @@
   }
 
   // ── 라이트박스 ──
-  function openLightbox(src) {
-    document.getElementById('lightboxImg').src = src;
+  function openLightbox(indexOrSrc) {
+    if (typeof indexOrSrc === 'number') {
+      lightboxIndex = indexOrSrc;
+    } else {
+      const filename = String(indexOrSrc || '').split('/').pop();
+      lightboxIndex = Math.max(0, works.findIndex(w => w.filename === filename));
+    }
+    updateLightbox();
     document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
   }
+
+  function updateLightbox() {
+    if (!works.length || lightboxIndex < 0) return;
+    if (lightboxIndex >= works.length) lightboxIndex = works.length - 1;
+    const work = works[lightboxIndex];
+    const voted = myVotes.includes(work.id);
+    document.getElementById('lightboxImg').src = `/uploads/${work.filename}`;
+    document.getElementById('lightboxImg').alt = work.title || '작품 이미지';
+    document.getElementById('lightboxTitle').textContent = work.title || '(제목 없음)';
+    document.getElementById('lightboxAuthor').textContent = `by ${work.author || '익명'} · ${lightboxIndex + 1} / ${works.length}`;
+    const voteBtn = document.getElementById('lightboxVoteBtn');
+    voteBtn.className = `lightbox-vote-btn${voted ? ' voted' : ''}`;
+    voteBtn.innerHTML = `<i data-lucide="heart"></i><span>${voted ? '투표 취소' : '투표하기'}</span>`;
+    lucide.createIcons();
+  }
+
+  function moveLightbox(step) {
+    if (!works.length) return;
+    lightboxIndex = (lightboxIndex + step + works.length) % works.length;
+    updateLightbox();
+  }
+
+  function voteFromLightbox() {
+    const work = works[lightboxIndex];
+    if (work) vote(work.id);
+  }
+
   function closeLightbox() {
     document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
   }
+
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lightbox')?.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') moveLightbox(-1);
+    if (e.key === 'ArrowRight') moveLightbox(1);
+  });
 
   // ── 드래그앤드롭 ──
   const dz = document.getElementById('dropZone');
